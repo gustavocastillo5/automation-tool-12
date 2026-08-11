@@ -1,57 +1,30 @@
-from typing import Any, Dict, Union
+import re
+
+def validate_email(email):
+    """Validate email address format."""
+    email_regex = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
+    if not email_regex.match(email):
+        raise ValueError(f'Invalid email address: {email}')
+    return True
 
 
-def is_valid_email(email: str) -> bool:
-    """
-    Validates if the provided email address is in a correct format.
-
-    Args:
-        email (str): Email address to validate.
-
-    Returns:
-        bool: True if valid email format, else False.
-    """
-    import re
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return re.match(pattern, email) is not None
+def validate_integer(value):
+    """Validate integer value within given range."""
+    if not isinstance(value, int):
+        raise ValueError(f'Expected an integer, got {type(value).__name__}')
+    return True
 
 
-def is_valid_age(age: Union[int, float]) -> bool:
-    """
-    Checks if the given age is a valid positive integer or float.
-
-    Args:
-        age (Union[int, float]): Age to validate.
-
-    Returns:
-        bool: True if age is a positive number, else False.
-    """
-    return isinstance(age, (int, float)) and age > 0
+def validate_positive_integer(value):
+    """Validate that integer is positive."""
+    validate_integer(value)
+    if value <= 0:
+        raise ValueError(f'Integer must be positive, got: {value}')
+    return True
 
 
-def is_non_empty_string(value: Any) -> bool:
-    """
-    Checks if the provided value is a non-empty string.
-
-    Args:
-        value (Any): Value to check.
-
-    Returns:
-        bool: True if value is a non-empty string, else False.
-    """
-    return isinstance(value, str) and bool(value.strip())
-
-
-def validate_user_info(user_info: Dict[str, Any]) -> bool:
-    """
-    Validates the user information dictionary.
-
-    Args:
-        user_info (Dict[str, Any]): Dictionary containing user information.
-
-    Returns:
-        bool: True if user information is valid, else False.
-    """
-    return (is_valid_email(user_info.get('email', '')) and
-            is_valid_age(user_info.get('age', 0)) and
-            is_non_empty_string(user_info.get('name', '')))
+def validate_string(value):
+    """Check if value is a non-empty string."""
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError('Value must be a non-empty string.')
+    return True
