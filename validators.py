@@ -1,30 +1,24 @@
-import re
+import time
+import requests
 
-def validate_email(email):
-    """Validate email address format."""
-    email_regex = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
-    if not email_regex.match(email):
-        raise ValueError(f'Invalid email address: {email}')
-    return True
+class NetworkError(Exception):
+    pass
 
+def retry_request(url, max_retries=3, delay=2):
+    attempts = 0
+    while attempts < max_retries:
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Raise an error for bad HTTP status
+            return response.json()  # Return the JSON response if successful
+        except requests.RequestException as e:
+            attempts += 1
+            print(f"Attempt {attempts} failed: {e}")
+            if attempts < max_retries:
+                time.sleep(delay)  # Wait before retrying
+            else:
+                raise NetworkError(f"Failed to fetch {url} after {max_retries} attempts")
 
-def validate_integer(value):
-    """Validate integer value within given range."""
-    if not isinstance(value, int):
-        raise ValueError(f'Expected an integer, got {type(value).__name__}')
-    return True
-
-
-def validate_positive_integer(value):
-    """Validate that integer is positive."""
-    validate_integer(value)
-    if value <= 0:
-        raise ValueError(f'Integer must be positive, got: {value}')
-    return True
-
-
-def validate_string(value):
-    """Check if value is a non-empty string."""
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError('Value must be a non-empty string.')
-    return True
+# Example usage:
+# data = retry_request('https://api.example.com/data')
+# print(data)  
