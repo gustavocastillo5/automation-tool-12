@@ -1,38 +1,41 @@
-import os
-import json
+import time
+import random
 
-def load_json(file_path):
-    """Load JSON data from a file."""
-    if not os.path.isfile(file_path):
-        raise ValueError(f"File not found: {file_path}")
-    with open(file_path, 'r') as file:
-        return json.load(file)
+class ClickError(Exception):
+    """Custom exception for click handling errors."""
+    pass
 
 
-def save_json(data, file_path):
-    """Save data to a JSON file."""
-    with open(file_path, 'w') as file:
-        json.dump(data, file, indent=4)
+def simulate_click(position):
+    try:
+        if not isinstance(position, (tuple, list)) or len(position) != 2:
+            raise ClickError("Position must be a tuple or list with two elements.")
+
+        x, y = position
+        if not (isinstance(x, int) and isinstance(y, int)):
+            raise ClickError("Coordinates must be integers.")
+
+        # Simulating a click (placeholder for actual click functionality)
+        print(f"Clicking at position: {position}")
+        time.sleep(random.uniform(0.1, 0.5))  # Simulate the delay before the next click
+    except ClickError as e:
+        print(f"Error while simulating click: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
 
 
-def get_file_extension(file_name):
-    """Return the file extension for a given file name."""
-    return os.path.splitext(file_name)[1]
+def click_multiple_times(position, times):
+    try:
+        if not isinstance(times, int) or times <= 0:
+            raise ClickError("'times' must be a positive integer.")
+
+        for _ in range(times):
+            simulate_click(position)
+    except ClickError as e:
+        print(f"Error in click_multiple_times: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred during multiple clicks: {e}")
 
 
-def ensure_directory_exists(directory):
-    """Create directory if it does not exist."""
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-
-def read_file_lines(file_path):
-    """Read lines from a file and return as a list."""
-    with open(file_path, 'r') as file:
-        return file.readlines()  
-
-
-def write_lines_to_file(file_path, lines):
-    """Write a list of lines to a file."""
-    with open(file_path, 'w') as file:
-        file.writelines(lines)
+if __name__ == '__main__':
+    click_multiple_times((500, 300), 5)  # Example usage
