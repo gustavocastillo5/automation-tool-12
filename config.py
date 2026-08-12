@@ -1,42 +1,34 @@
 import json
 import os
 
-class ConfigError(Exception):
-    pass
+DEFAULT_CONFIG = {
+    'click_speed': 100,
+    'button': 1,
+    'duration': 60,
+    'repeat': False
+}
 
-class Config:
-    def __init__(self, filename):
-        self.filename = filename
-        self.config_data = {}
+class ConfigLoader:
+    def __init__(self, config_file='config.json'):
+        self.config_file = config_file
+        self.config = DEFAULT_CONFIG.copy()
         self.load_config()
 
     def load_config(self):
-        if not os.path.exists(self.filename):
-            raise ConfigError(f'Configuration file not found: {self.filename}')
-        
-        try:
-            with open(self.filename, 'r') as file:
-                self.config_data = json.load(file)
-        except json.JSONDecodeError:
-            raise ConfigError('Failed to decode JSON from the configuration file')
-        except Exception as e:
-            raise ConfigError(f'An unexpected error occurred: {str(e)}')
+        if os.path.exists(self.config_file):
+            with open(self.config_file, 'r') as file:
+                try:
+                    user_config = json.load(file)
+                    self.config.update(user_config)
+                except json.JSONDecodeError as e:
+                    print(f'Error loading config: {e}')
 
-    def get(self, key, default=None):
-        return self.config_data.get(key, default)
-
-    def __getitem__(self, key):
-        try:
-            return self.config_data[key]
-        except KeyError:
-            raise ConfigError(f'Key {key} not found in configuration')
+    def get(self, key):
+        return self.config.get(key, DEFAULT_CONFIG.get(key))
 
     def set(self, key, value):
-        self.config_data[key] = value
+        self.config[key] = value
 
     def save(self):
-        try:
-            with open(self.filename, 'w') as file:
-                json.dump(self.config_data, file, indent=4)
-        except Exception as e:
-            raise ConfigError(f'Error saving configuration file: {str(e)}')
+        with open(self.config_file, 'w') as file:
+            json.dump(self.config, file, indent=4)
