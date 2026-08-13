@@ -1,29 +1,36 @@
-import json
-from typing import Any, Dict, List
+import time
 
-class AutoClickerData:
-    def __init__(self, file_path: str):
-        self.file_path = file_path
-        self.data = self.load_data()
+class AutoClicker:
+    def __init__(self, interval=0.1):
+        self.interval = interval
+        self.running = False
 
-    def load_data(self) -> List[Dict[str, Any]]:
-        try:
-            with open(self.file_path, 'r') as file:
-                return json.load(file)
-        except Exception as e:
-            print(f"Error loading data: {e}")
-            return []
+    def start(self):
+        self.running = True
+        while self.running:
+            self.click()
+            time.sleep(self.interval)
 
-    def save_data(self) -> None:
-        try:
-            with open(self.file_path, 'w') as file:
-                json.dump(self.data, file, indent=4)
-        except Exception as e:
-            print(f"Error saving data: {e}")
+    def stop(self):
+        self.running = False
 
-    def add_click_event(self, event: Dict[str, Any]) -> None:
-        self.data.append(event)
-        self.save_data()
+    def click(self):
+        # Simulating mouse click
+        print('Mouse clicked!')  # Replace with actual click logic
 
-    def get_click_events(self) -> List[Dict[str, Any]]:
-        return self.data
+    def set_interval(self, interval):
+        self.interval = interval
+
+    def adjust_speed(self, new_speed):
+        if self.running:  # Only adjust if running
+            self.stop()  # Stop before adjusting
+            self.set_interval(new_speed)
+            self.start()  # Restart with new speed
+
+# Example usage
+if __name__ == '__main__':
+    autoclicker = AutoClicker(interval=0.2)
+    try:
+        autoclicker.start()
+    except KeyboardInterrupt:
+        autoclicker.stop()
