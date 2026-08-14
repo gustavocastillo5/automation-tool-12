@@ -1,29 +1,33 @@
 import re
 
-def is_valid_email(email):
+def is_valid_click_coordinate(value):
     """
-    Validate the email format.
-    Returns True if valid, otherwise False.
+    Validates if the input coordinate is a tuple of two integers.
     """
-    email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return re.match(email_regex, email) is not None
+    if isinstance(value, tuple) and len(value) == 2:
+        return all(isinstance(coord, int) for coord in value)
+    return False
 
 
-def is_valid_url(url):
+def is_valid_click_interval(value):
     """
-    Validate the URL format.
-    Returns True if valid, otherwise False.
+    Validates if the input click interval is a positive integer.
     """
-    url_regex = r'^(https?://)?(www\.)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(/.+)?$'
-    return re.match(url_regex, url) is not None
+    return isinstance(value, int) and value > 0
 
 
-def validate_user_input(email, url):
+def is_valid_click_count(value):
     """
-    Validate user input for email and URL.
-    Returns a dictionary with validation results.
+    Validates if the number of clicks is a positive integer.
     """
-    return {
-        'email': is_valid_email(email),
-        'url': is_valid_url(url)
-    }
+    return isinstance(value, int) and value > 0
+
+
+if __name__ == '__main__':
+    # Test cases
+    print(is_valid_click_coordinate((100, 200)))  # True
+    print(is_valid_click_coordinate((100,)))       # False
+    print(is_valid_click_interval(500))             # True
+    print(is_valid_click_interval(-10))             # False
+    print(is_valid_click_count(10))                 # True
+    print(is_valid_click_count(0))                  # False
