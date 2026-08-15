@@ -1,37 +1,34 @@
-import time
-import threading
+import json
+import os
 
-class AutoClicker:
-    def __init__(self, interval: float):
-        self.interval = interval
-        self.running = False
-        self.thread = None
+class DataHandler:
+    def __init__(self, data_file):
+        self.data_file = data_file
+        self.data = self.load_data()
 
-    def start(self):
-        if not self.running:
-            self.running = True
-            self.thread = threading.Thread(target=self._click_loop)
-            self.thread.start()
+    def load_data(self):
+        """Load data from a JSON file."""
+        if os.path.exists(self.data_file):
+            with open(self.data_file, 'r') as file:
+                return json.load(file)
+        return {}
 
-    def stop(self):
-        self.running = False
-        if self.thread:
-            self.thread.join()
-            self.thread = None
+    def save_data(self, data):
+        """Save data to a JSON file."""
+        with open(self.data_file, 'w') as file:
+            json.dump(data, file, indent=4)
 
-    def _click_loop(self):
-        while self.running:
-            self._perform_click()
-            time.sleep(self.interval)
+    def update_data(self, key, value):
+        """Update a key-value pair in the data."""
+        self.data[key] = value
+        self.save_data(self.data)
 
-    def _perform_click(self):
-        # Replace with actual click logic
-        print('Click!')
+    def get_data(self, key):
+        """Retrieve a value by key from the data."""
+        return self.data.get(key, None)
 
+# Example usage
 if __name__ == '__main__':
-    autoclicker = AutoClicker(interval=0.1)
-    try:
-        autoclicker.start()
-        time.sleep(2)  # Run for 2 seconds
-    finally:
-        autoclicker.stop()
+    handler = DataHandler('clicker_data.json')
+    handler.update_data('click_interval', 0.1)
+    print(handler.get_data('click_interval'))  # Output: 0.1
