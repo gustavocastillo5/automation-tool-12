@@ -1,37 +1,27 @@
-from typing import List, Dict
+import time
+import random
 
+class ClickProcessor:
+    def __init__(self, clicks_per_second):
+        self.clicks_per_second = clicks_per_second
 
-def process_data(data: List[Dict[str, str]]) -> List[Dict[str, str]]:
-    """Processes a list of dictionaries and returns the modified list.
+    def start_clicking(self, duration):
+        end_time = time.time() + duration
+        while time.time() < end_time:
+            self.perform_click()
+            time.sleep(1 / self.clicks_per_second)
 
-    Args:
-        data (List[Dict[str, str]]): A list of dictionaries containing data to process.
+    def perform_click(self):
+        # Simulated click action
+        x, y = self.get_random_coordinates()
+        print(f'Clicking at ({x}, {y})')  # Replace with actual click action
 
-    Returns:
-        List[Dict[str, str]]: A modified list of dictionaries after processing.
-    """
-    processed_data = []
-    for item in data:
-        processed_item = {"id": item.get("id"), "processed": item.get("value", "").upper()}
-        processed_data.append(processed_item)
-    return processed_data
+    def get_random_coordinates(self):
+        # Simulate generating random screen coordinates
+        x = random.randint(0, 1920)  # Assuming a screen width of 1920
+        y = random.randint(0, 1080)  # Assuming a screen height of 1080
+        return x, y
 
-
-def filter_data(data: List[Dict[str, str]], threshold: int) -> List[Dict[str, str]]:
-    """Filters data based on a threshold value.
-
-    Args:
-        data (List[Dict[str, str]]): A list of dictionaries to filter.
-        threshold (int): The threshold value for filtering.
-
-    Returns:
-        List[Dict[str, str]]: A list of filtered dictionaries.
-    """
-    return [item for item in data if int(item.get("value", 0)) > threshold
-
-
-if __name__ == "__main__":
-    example_data = [{"id": "1", "value": "5"}, {"id": "2", "value": "10"}]
-    processed = process_data(example_data)
-    filtered = filter_data(processed, 6)
-    print(filtered)  
+if __name__ == '__main__':
+    processor = ClickProcessor(clicks_per_second=5)
+    processor.start_clicking(duration=10)  # Click for 10 seconds
