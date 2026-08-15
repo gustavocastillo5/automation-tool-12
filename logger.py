@@ -1,28 +1,18 @@
 import logging
+from logging.handlers import RotatingFileHandler
 
-# Configure the logger
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+def setup_logger(log_file='app.log', max_bytes=5 * 1024 * 1024, backup_count=3):
+    logger = logging.getLogger('AutoClickerLogger')
+    logger.setLevel(logging.DEBUG)
 
-class ClickerLogger:
-    def __init__(self, name):
-        self.logger = logging.getLogger(name)
+    # Create a rotating file handler
+    handler = RotatingFileHandler(log_file, maxBytes=max_bytes, backupCount=backup_count)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
 
-    def log_info(self, message):
-        self.logger.info(message)
+    # Add the handler to the logger
+    logger.addHandler(handler)
+    return logger
 
-    def log_warning(self, message):
-        self.logger.warning(message)
-
-    def log_error(self, message):
-        self.logger.error(message)
-
-    def log_debug(self, message):
-        self.logger.debug(message)
-
-# Example usage:
-if __name__ == '__main__':
-    clicker_log = ClickerLogger('autoclicker')
-    clicker_log.log_info('Autoclicker started')
-    clicker_log.log_debug('This is a debug message')
-    clicker_log.log_warning('This is a warning message')
-    clicker_log.log_error('This is an error message')
+# Example usage: logger = setup_logger()
+logger = setup_logger()  # Uncomment to use
