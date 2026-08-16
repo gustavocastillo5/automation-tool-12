@@ -1,41 +1,30 @@
 import time
-import random
+import threading
 
-class ClickError(Exception):
-    """Custom exception for click handling errors."""
-    pass
+class RateLimiter:
+    def __init__(self, rate_limit):
+        self.rate_limit = rate_limit  # max calls per second
+        self.last_called = 0.0
+        self.lock = threading.Lock()
 
+    def wait(self):
+        with self.lock:
+            current_time = time.time()
+            elapsed = current_time - self.last_called
+            wait_time = max(0, (1 / self.rate_limit) - elapsed)
+            if wait_time > 0:
+                time.sleep(wait_time)
+            self.last_called = time.time()
 
-def simulate_click(position):
-    try:
-        if not isinstance(position, (tuple, list)) or len(position) != 2:
-            raise ClickError("Position must be a tuple or list with two elements.")
+def autoclick(click_action, rate_limit):
+    limiter = RateLimiter(rate_limit)
+    while True:
+        limiter.wait()  # control the click rate
+        click_action()  # perform the click
 
-        x, y = position
-        if not (isinstance(x, int) and isinstance(y, int)):
-            raise ClickError("Coordinates must be integers.")
-
-        # Simulating a click (placeholder for actual click functionality)
-        print(f"Clicking at position: {position}")
-        time.sleep(random.uniform(0.1, 0.5))  # Simulate the delay before the next click
-    except ClickError as e:
-        print(f"Error while simulating click: {e}")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-
-
-def click_multiple_times(position, times):
-    try:
-        if not isinstance(times, int) or times <= 0:
-            raise ClickError("'times' must be a positive integer.")
-
-        for _ in range(times):
-            simulate_click(position)
-    except ClickError as e:
-        print(f"Error in click_multiple_times: {e}")
-    except Exception as e:
-        print(f"An unexpected error occurred during multiple clicks: {e}")
-
-
+# Example usage
 if __name__ == '__main__':
-    click_multiple_times((500, 300), 5)  # Example usage
+    def click_action():
+        print('Click!')
+
+    autoclick(click_action, 5)  # 5 clicks per second
