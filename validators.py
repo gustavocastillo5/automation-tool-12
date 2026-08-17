@@ -1,43 +1,37 @@
 import re
 
-def validate_input(input_value):
+def validate_click_rate(rate: float) -> bool:
+    """Validate the click rate value.
+    Click rate must be a positive number, representing clicks per second.
     """
-    Validate the user input to ensure it meets the required criteria.
-    The input should be a positive integer and within a specified range.
-    """
-    try:
-        value = int(input_value)
-        if value <= 0:
-            raise ValueError("Input must be a positive integer.")
-        return value
-    except ValueError as e:
-        print(f"Invalid input: {e}")
-        return None
+    return rate > 0
 
 
-def validate_coordinates(x, y):
+def validate_coordinates(x: int, y: int) -> bool:
+    """Validate the mouse click coordinates.
+    Coordinates must be non-negative integers, typically within screen resolution.
     """
-    Validate the coordinates to ensure they are within screen bounds.
-    The coordinates should be non-negative integers.
-    """
-    if not (isinstance(x, int) and isinstance(y, int)):
-        print("Coordinates must be integers.")
-        return False
-    if x < 0 or y < 0:
-        print("Coordinates must be non-negative.")
-        return False
-    return True
+    return isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0
 
 
-# Example usage in main processing loop:
-if __name__ == '__main__':
-    user_input = input("Enter a positive integer: ")
-    validated_input = validate_input(user_input)
-    if validated_input is not None:
-        print(f"Valid input: {validated_input}")
-    x_coord = -1  # example coordinate
-    y_coord = 100
-    if validate_coordinates(x_coord, y_coord):
-        print("Coordinates are valid.")
-    else:
-        print("Invalid coordinates.")
+def validate_file_extension(filename: str, valid_extensions: list) -> bool:
+    """Check if the provided filename has a valid extension.
+    Valid extensions are provided as a list of strings.
+    """
+    return any(filename.endswith(ext) for ext in valid_extensions)
+
+
+def validate_timeout(timeout: int) -> bool:
+    """Validate the timeout value.
+    Timeout must be a positive integer representing milliseconds.
+    """
+    return isinstance(timeout, int) and timeout > 0
+
+
+def validate_settings(settings: dict) -> bool:
+    """Validate the settings dictionary for the autoclicker.
+    Must contain valid click rate, coordinates, and timeout values.
+    """
+    return (validate_click_rate(settings.get('click_rate', 0)) and
+            validate_coordinates(settings.get('x', 0), settings.get('y', 0)) and
+            validate_timeout(settings.get('timeout', 1000)))
