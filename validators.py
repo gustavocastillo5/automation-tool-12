@@ -1,33 +1,43 @@
 import re
 
-def is_valid_click_coordinate(value):
+def validate_input(input_value):
     """
-    Validates if the input coordinate is a tuple of two integers.
+    Validate the user input to ensure it meets the required criteria.
+    The input should be a positive integer and within a specified range.
     """
-    if isinstance(value, tuple) and len(value) == 2:
-        return all(isinstance(coord, int) for coord in value)
-    return False
+    try:
+        value = int(input_value)
+        if value <= 0:
+            raise ValueError("Input must be a positive integer.")
+        return value
+    except ValueError as e:
+        print(f"Invalid input: {e}")
+        return None
 
 
-def is_valid_click_interval(value):
+def validate_coordinates(x, y):
     """
-    Validates if the input click interval is a positive integer.
+    Validate the coordinates to ensure they are within screen bounds.
+    The coordinates should be non-negative integers.
     """
-    return isinstance(value, int) and value > 0
+    if not (isinstance(x, int) and isinstance(y, int)):
+        print("Coordinates must be integers.")
+        return False
+    if x < 0 or y < 0:
+        print("Coordinates must be non-negative.")
+        return False
+    return True
 
 
-def is_valid_click_count(value):
-    """
-    Validates if the number of clicks is a positive integer.
-    """
-    return isinstance(value, int) and value > 0
-
-
+# Example usage in main processing loop:
 if __name__ == '__main__':
-    # Test cases
-    print(is_valid_click_coordinate((100, 200)))  # True
-    print(is_valid_click_coordinate((100,)))       # False
-    print(is_valid_click_interval(500))             # True
-    print(is_valid_click_interval(-10))             # False
-    print(is_valid_click_count(10))                 # True
-    print(is_valid_click_count(0))                  # False
+    user_input = input("Enter a positive integer: ")
+    validated_input = validate_input(user_input)
+    if validated_input is not None:
+        print(f"Valid input: {validated_input}")
+    x_coord = -1  # example coordinate
+    y_coord = 100
+    if validate_coordinates(x_coord, y_coord):
+        print("Coordinates are valid.")
+    else:
+        print("Invalid coordinates.")
