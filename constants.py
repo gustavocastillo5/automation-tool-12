@@ -1,0 +1,9 @@
+AUTOMATION_TOOL_NAME = 'Autoclicker'
+DEFAULT_CLICK_INTERVAL = 0.02  # default click interval in seconds
+MAX_CLICKS = 1000  # maximum number of clicks the tool can perform
+MIN_CLICKS = 1  # minimum number of clicks
+SUPPORTED_PLATFORMS = ['Windows', 'macOS', 'Linux']  # supported operating systems
+ERROR_MSG_TOO_MANY_CLICKS = 'Too many clicks requested'
+ERROR_MSG_INVALID_INPUT = 'Invalid input value, please check'
+LOG_FILE_NAME = 'autoclicker.log'  # log file name for the tool
+CONFIG_FILE_PATH = 'config.yaml'  # path to configuration file
