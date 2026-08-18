@@ -1,24 +1,35 @@
-class InputValidationError(Exception):
-    """Custom exception for input validation errors."""
+class AutomationError(Exception):
+    """Base class for exceptions in this module."""
     pass
 
+class InvalidClickPositionError(AutomationError):
+    """Raised when the click position is invalid."""
+    def __init__(self, position):
+        super().__init__(f'Invalid click position: {position}')
+        self.position = position
 
-def validate_click_interval(interval):
-    if not isinstance(interval, (int, float)):
-        raise InputValidationError("Click interval must be a number.")
-    if interval <= 0:
-        raise InputValidationError("Click interval must be greater than zero.")
+class ClickRateExceededError(AutomationError):
+    """Raised when click rate exceeds allowed limit."""
+    def __init__(self, rate):
+        super().__init__(f'Click rate exceeded: {rate}')
+        self.rate = rate
 
+class ResourceNotAvailableError(AutomationError):
+    """Raised when required resources are not available."""
+    def __init__(self, resource):
+        super().__init__(f'Resource not available: {resource}')
+        self.resource = resource
 
-def validate_click_count(count):
-    if not isinstance(count, int):
-        raise InputValidationError("Click count must be an integer.")
-    if count <= 0:
-        raise InputValidationError("Click count must be greater than zero.")
+# Example function demonstrating usage of the exceptions
 
+def click(position, rate):
+    if not is_valid_position(position):
+        raise InvalidClickPositionError(position)
+    if rate > MAX_CLICK_RATE:
+        raise ClickRateExceededError(rate)
+    if not are_resources_available():
+        raise ResourceNotAvailableError('Mouse or Interface')
+    # Proceed with click logic
+    perform_click(position)
 
-def validate_coordinates(x, y):
-    if not (isinstance(x, int) and isinstance(y, int)):
-        raise InputValidationError("Coordinates must be integers.")
-    if x < 0 or y < 0:
-        raise InputValidationError("Coordinates must be non-negative.")
+# Helper functions used in the main click logic would be implemented separately.
