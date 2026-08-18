@@ -1,28 +1,46 @@
-import time
-import random
+from typing import List, Tuple
 
-def validate_input(input_value):
-    if not isinstance(input_value, (int, float)):
-        raise ValueError('Input must be a number.')
-    if input_value < 0:
-        raise ValueError('Input must be non-negative.')
-    return True
 
-def perform_click(delay):
-    time.sleep(delay)
-    print(f'Click performed after {delay} seconds.')
+def calculate_click_interval(interval: float, count: int) -> List[float]:
+    """
+    Calculate a list of click intervals based on the total interval and count.
+    
+    Args:
+        interval (float): Total time in seconds for the clicks.
+        count (int): Number of clicks to be performed.
+    
+    Returns:
+        List[float]: A list of intervals for each click.
+    """
+    if count <= 0:
+        raise ValueError('Count must be greater than zero.')
+    return [interval / count] * count
 
-def main_loop():
-    while True:
-        try:
-            user_input = float(input('Enter click delay in seconds (0 to exit): '))
-            if user_input == 0:
-                print('Exiting...')
-                break
-            validate_input(user_input)
-            perform_click(user_input)
-        except ValueError as e:
-            print(f'Invalid input: {e}')
-        except KeyboardInterrupt:
-            print('\nProcess interrupted. Exiting...')
-            break
+
+def generate_click_positions(screen_size: Tuple[int, int], count: int) -> List[Tuple[int, int]]:
+    """
+    Generate random click positions within the screen size.
+    
+    Args:
+        screen_size (Tuple[int, int]): Width and height of the screen.
+        count (int): Number of positions to generate.
+    
+    Returns:
+        List[Tuple[int, int]]: A list of (x, y) positions for clicks.
+    """
+    import random
+    return [(random.randint(0, screen_size[0]), random.randint(0, screen_size[1])) for _ in range(count)]
+
+
+def validate_click_count(count: int) -> None:
+    """
+    Validate that the click count is a positive integer.
+    
+    Args:
+        count (int): Click count to validate.
+    
+    Raises:
+        ValueError: If the count is not valid.
+    """
+    if not isinstance(count, int) or count <= 0:
+        raise ValueError('Click count must be a positive integer.')
