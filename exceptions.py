@@ -1,23 +1,24 @@
-class ClickError(Exception):
-    """Exception raised for errors in the click operation."""
-    def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
+class InputValidationError(Exception):
+    """Custom exception for input validation errors."""
+    pass
 
-class InvalidClickDataError(Exception):
-    """Exception raised for invalid click data provided."""
-    def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
 
-class ClickTimeoutError(Exception):
-    """Exception raised when clicking times out."""
-    def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
+def validate_click_interval(interval):
+    if not isinstance(interval, (int, float)):
+        raise InputValidationError("Click interval must be a number.")
+    if interval <= 0:
+        raise InputValidationError("Click interval must be greater than zero.")
 
-class PermissionsError(Exception):
-    """Exception raised for permission-related issues."""
-    def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
+
+def validate_click_count(count):
+    if not isinstance(count, int):
+        raise InputValidationError("Click count must be an integer.")
+    if count <= 0:
+        raise InputValidationError("Click count must be greater than zero.")
+
+
+def validate_coordinates(x, y):
+    if not (isinstance(x, int) and isinstance(y, int)):
+        raise InputValidationError("Coordinates must be integers.")
+    if x < 0 or y < 0:
+        raise InputValidationError("Coordinates must be non-negative.")
