@@ -1,30 +1,37 @@
-import time
-import threading
+import json
+from typing import Any, Dict, List
 
-class RateLimiter:
-    def __init__(self, rate_limit):
-        self.rate_limit = rate_limit  # max calls per second
-        self.last_called = 0.0
-        self.lock = threading.Lock()
+def load_config(file_path: str) -> Dict[str, Any]:
+    """Load JSON configuration from a file."""
+    with open(file_path, 'r') as file:
+        return json.load(file)
 
-    def wait(self):
-        with self.lock:
-            current_time = time.time()
-            elapsed = current_time - self.last_called
-            wait_time = max(0, (1 / self.rate_limit) - elapsed)
-            if wait_time > 0:
-                time.sleep(wait_time)
-            self.last_called = time.time()
 
-def autoclick(click_action, rate_limit):
-    limiter = RateLimiter(rate_limit)
-    while True:
-        limiter.wait()  # control the click rate
-        click_action()  # perform the click
+def save_config(data: Dict[str, Any], file_path: str) -> None:
+    """Save configuration data to a JSON file."""
+    with open(file_path, 'w') as file:
+        json.dump(data, file, indent=4)
 
-# Example usage
-if __name__ == '__main__':
-    def click_action():
-        print('Click!')
 
-    autoclick(click_action, 5)  # 5 clicks per second
+def format_click_data(clicks: List[Dict[str, Any]]) -> List[str]:
+    """Format click data for better readability.""" 
+    formatted_data = []
+    for click in clicks:
+        formatted_data.append(f"Position: ({click['x']}, {click['y']}), Delay: {click['delay']}s")
+    return formatted_data
+
+
+def validate_click_data(data: Dict[str, Any]) -> bool:
+    """Validate the click data structure."""
+    required_keys = {'x', 'y', 'delay'}
+    return all(key in data for key in required_keys) 
+
+
+def parse_clicks(raw_data: str) -> List[Dict[str, Any]]:
+    """Parse raw click data into structured format."""
+    clicks = []
+    lines = raw_data.strip().split('\n')
+    for line in lines:
+        x, y, delay = map(float, line.split(','))
+        clicks.append({'x': x, 'y': y, 'delay': delay})
+    return clicks
