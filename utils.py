@@ -1,37 +1,32 @@
 import json
-from typing import Any, Dict, List
 
-def load_config(file_path: str) -> Dict[str, Any]:
-    """Load JSON configuration from a file."""
-    with open(file_path, 'r') as file:
-        return json.load(file)
+class AutoClickerDataHandler:
+    def __init__(self, file_path):
+        self.file_path = file_path
 
+    def load_data(self):
+        try:
+            with open(self.file_path, 'r') as file:
+                data = json.load(file)
+                return data
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"Error loading data: {e}")
+            return {}
 
-def save_config(data: Dict[str, Any], file_path: str) -> None:
-    """Save configuration data to a JSON file."""
-    with open(file_path, 'w') as file:
-        json.dump(data, file, indent=4)
+    def save_data(self, data):
+        try:
+            with open(self.file_path, 'w') as file:
+                json.dump(data, file, indent=4)
+        except IOError as e:
+            print(f"Error saving data: {e}")
 
+    def update_data(self, key, value):
+        data = self.load_data()
+        data[key] = value
+        self.save_data(data)
 
-def format_click_data(clicks: List[Dict[str, Any]]) -> List[str]:
-    """Format click data for better readability.""" 
-    formatted_data = []
-    for click in clicks:
-        formatted_data.append(f"Position: ({click['x']}, {click['y']}), Delay: {click['delay']}s")
-    return formatted_data
-
-
-def validate_click_data(data: Dict[str, Any]) -> bool:
-    """Validate the click data structure."""
-    required_keys = {'x', 'y', 'delay'}
-    return all(key in data for key in required_keys) 
-
-
-def parse_clicks(raw_data: str) -> List[Dict[str, Any]]:
-    """Parse raw click data into structured format."""
-    clicks = []
-    lines = raw_data.strip().split('\n')
-    for line in lines:
-        x, y, delay = map(float, line.split(','))
-        clicks.append({'x': x, 'y': y, 'delay': delay})
-    return clicks
+    def delete_key(self, key):
+        data = self.load_data()
+        if key in data:
+            del data[key]
+            self.save_data(data)
