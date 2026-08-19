@@ -1,34 +1,31 @@
-import json
-import os
+import time
 
-class DataHandler:
-    def __init__(self, data_file):
-        self.data_file = data_file
-        self.data = self.load_data()
+class AutoClicker:
+    def __init__(self, click_interval=1.0):
+        self.click_interval = click_interval
+        self.running = False
 
-    def load_data(self):
-        """Load data from a JSON file."""
-        if os.path.exists(self.data_file):
-            with open(self.data_file, 'r') as file:
-                return json.load(file)
-        return {}
+    def start(self):
+        self.running = True
+        while self.running:
+            self.click()
+            time.sleep(self.click_interval)
 
-    def save_data(self, data):
-        """Save data to a JSON file."""
-        with open(self.data_file, 'w') as file:
-            json.dump(data, file, indent=4)
+    def stop(self):
+        self.running = False
 
-    def update_data(self, key, value):
-        """Update a key-value pair in the data."""
-        self.data[key] = value
-        self.save_data(self.data)
+    def click(self):
+        # Simulate a mouse click
+        print('Mouse clicked!')  # Replace with actual click logic
 
-    def get_data(self, key):
-        """Retrieve a value by key from the data."""
-        return self.data.get(key, None)
+    def set_interval(self, interval):
+        # Performance optimization: avoid redundant updates
+        if interval > 0:
+            self.click_interval = interval
 
-# Example usage
 if __name__ == '__main__':
-    handler = DataHandler('clicker_data.json')
-    handler.update_data('click_interval', 0.1)
-    print(handler.get_data('click_interval'))  # Output: 0.1
+    autoclicker = AutoClicker(0.5)  # Set default click interval
+    try:
+        autoclicker.start()  # Start autoclicking
+    except KeyboardInterrupt:
+        autoclicker.stop()  # Stop on keyboard interrupt
