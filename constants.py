@@ -1,25 +1,33 @@
-# Constants for the automation tool
+# Constants used throughout the autoclicker tool
 
-# Mouse button constants
-define MOUSE_LEFT_BUTTON = 1
-DEFINE MOUSE_RIGHT_BUTTON = 2
-DEFINE MOUSE_MIDDLE_BUTTON = 3
+# Default configuration settings
+DEFAULT_CLICK_INTERVAL = 0.1  # in seconds
+DEFAULT_BUTTON = 'left'
+DEFAULT_REPEAT_COUNT = 100
 
-# Key constants
-define KEY_ENTER = 13
-DEFINE KEY_ESCAPE = 27
-DEFINE KEY_SPACE = 32
+# Predefined mouse actions
+MOUSE_ACTIONS = {
+    'left_click': 'left',
+    'right_click': 'right',
+    'double_click': 'double',
+}
 
-# Default configurations
-DEFINE DEFAULT_DELAY = 0.1  # seconds between clicks
-DEFINE DEFAULT_CLICKS = 100  # number of clicks
+# Application settings
+WINDOW_TITLE = 'Autoclicker'
+MAXIMUM_CLICKS_PER_SECOND = 20
 
-# Status messages
-DEFINE STATUS_RUNNING = 'Running'
-DEFINE STATUS_STOPPED = 'Stopped'
-DEFINE STATUS_ERROR = 'Error occurred'
+# File paths
+CONFIG_FILE_PATH = 'config.json'
+LOG_FILE_PATH = 'autoclicker.log'
 
-# User preference keys
-DEFINE PREF_MOUSE_BUTTON = 'mouse_button'
-DEFINE PREF_CLICK_DELAY = 'click_delay'
-DEFINE PREF_NUM_CLICKS = 'num_clicks'
+# Message constants
+ERROR_MESSAGES = {
+    'file_not_found': 'The specified file could not be found.',
+    'invalid_configuration': 'Configuration is invalid or missing required keys.',
+}
+
+# Success messages
+SUCCESS_MESSAGES = {
+    'operation_complete': 'The operation completed successfully.',
+    'clicks_executed': 'Clicks have been executed.',
+}
