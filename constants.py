@@ -1,9 +1,25 @@
-AUTOMATION_TOOL_NAME = 'Autoclicker'
-DEFAULT_CLICK_INTERVAL = 0.02  # default click interval in seconds
-MAX_CLICKS = 1000  # maximum number of clicks the tool can perform
-MIN_CLICKS = 1  # minimum number of clicks
-SUPPORTED_PLATFORMS = ['Windows', 'macOS', 'Linux']  # supported operating systems
-ERROR_MSG_TOO_MANY_CLICKS = 'Too many clicks requested'
-ERROR_MSG_INVALID_INPUT = 'Invalid input value, please check'
-LOG_FILE_NAME = 'autoclicker.log'  # log file name for the tool
-CONFIG_FILE_PATH = 'config.yaml'  # path to configuration file
+# Constants for the automation tool
+
+# Mouse button constants
+define MOUSE_LEFT_BUTTON = 1
+DEFINE MOUSE_RIGHT_BUTTON = 2
+DEFINE MOUSE_MIDDLE_BUTTON = 3
+
+# Key constants
+define KEY_ENTER = 13
+DEFINE KEY_ESCAPE = 27
+DEFINE KEY_SPACE = 32
+
+# Default configurations
+DEFINE DEFAULT_DELAY = 0.1  # seconds between clicks
+DEFINE DEFAULT_CLICKS = 100  # number of clicks
+
+# Status messages
+DEFINE STATUS_RUNNING = 'Running'
+DEFINE STATUS_STOPPED = 'Stopped'
+DEFINE STATUS_ERROR = 'Error occurred'
+
+# User preference keys
+DEFINE PREF_MOUSE_BUTTON = 'mouse_button'
+DEFINE PREF_CLICK_DELAY = 'click_delay'
+DEFINE PREF_NUM_CLICKS = 'num_clicks'
