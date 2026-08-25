@@ -1,22 +1,50 @@
 import time
-import requests
-from requests.exceptions import RequestException
+import threading
 
-class NetworkHandler:
-    def __init__(self, max_retries=3, backoff_factor=0.5):
-        self.max_retries = max_retries
-        self.backoff_factor = backoff_factor
+# Handler for managing autoclick operations in the tool
+class ClickHandler:
+    def __init__(self, interval=0.1):
+        self.interval = interval
+        self.active = False
+        self.thread = None
+        self.stop_flag = threading.Event()
 
-    def send_request(self, url):
-        retries = 0
-        while retries < self.max_retries:
-            try:
-                response = requests.get(url)
-                response.raise_for_status()  # Raise an error for bad responses
-                return response.json()  # Return the JSON content of the response
-            except RequestException as e:
-                retries += 1
-                wait_time = self.backoff_factor * (2 ** retries)  # Exponential backoff
-                print(f'Error occurred: {e}. Retrying in {wait_time:.2f} seconds...')
-                time.sleep(wait_time)
-        raise ConnectionError(f'Failed to connect to {url} after {self.max_retries} retries.')
+    def initiate_clicking(self):
+        # Start if not already active
+        if self.active:
+            return
+        self.active = True
+        self.stop_flag.clear()
+        self.thread = threading.Thread(target=self._clicking_routine)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def terminate_clicking(self):
+        # Stop the process cleanly
+        if not self.active:
+            return
+        self.active = False
+        self.stop_flag.set()
+        if self.thread is not None:
+            self.thread.join(timeout=1.0)
+
+    def _clicking_routine(self):
+        # Main loop reorganized for clarity
+        while not self.stop_flag.is_set():
+            self._do_click_action()
+            time.sleep(self.interval)
+
+    def _do_click_action(self):
+        # Simulated for this environment
+        print("Simulated click performed.")
+
+    def update_interval(self, new_interval):
+        # Validate and set new interval
+        if new_interval > 0:
+            self.interval = new_interval
+
+if __name__ == "__main__":
+    handler = ClickHandler(0.2)
+    handler.initiate_clicking()
+    time.sleep(2)
+    handler.terminate_clicking()
