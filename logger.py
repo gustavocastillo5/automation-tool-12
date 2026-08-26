@@ -2,37 +2,44 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 
-def setup_logger(name="autoclicker", log_dir="logs", log_file="autoclicker.log", level=logging.INFO, max_bytes=10485760, backup_count=5):
-    """Configure logger with file rotation for the autoclicker tool."""
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-    log_path = os.path.join(log_dir, log_file)
+LOG_DIR = "logs"
+LOG_FILE = "autoclicker.ico.log"
+MAX_BYTES = 5 * 1024 * 1024  # 5MB
+BACKUP_COUNT = 3
+
+def setup_logger(name: str = "autoclicker") -> logging.Logger:
+    """Configure and return a logger with file rotation."""
+    if not os.path.exists(LOG_DIR):
+        os.makedirs(LOG_DIR)
+
     logger = logging.getLogger(name)
-    # Clear existing handlers to prevent duplicates
+    logger.setLevel(logging.INFO)
+
+    # Prevent adding multiple handlers if setup is called more than once
     if logger.hasHandlers():
-        logger.handlers.clear()
-    logger.setLevel(level)
-    # Set up rotating file handler
+        return logger
+
+    log_path = os.path.join(LOG_DIR, LOG_FILE)
+    
+    # File handler with rotation
     file_handler = RotatingFileHandler(
-        log_path, maxBytes=max_bytes, backupCount=backup_count
+        log_path, maxBytes=MAX_BYTES, backupCount=BACKUP_COUNT
     )
-    file_handler.setLevel(level)
+    file_handler.setLevel(logging.INFO)
+
+    # Console handler for debugging
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+
+    # Formatter configuration
     formatter = logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
     file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-    # Add stream handler for console output
-    stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(level)
-    stream_handler.setFormatter(formatter)
-    logger.addHandler(stream_handler)
-    return logger
+    console_handler.setFormatter(formatter)
 
-# For direct testing
-if __name__ == "__main__":
-    log = setup_logger()
-    log.debug("Debug message example")
-    log.info("Info message example")
-    log.warning("Warning message example")
-    log.error("Error message example")
+    # Attach handlers
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+    return logger
