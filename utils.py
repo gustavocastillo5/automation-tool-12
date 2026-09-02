@@ -1,35 +1,77 @@
 import time
-import functools
-import logging
+import random
+from functools import wraps
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('automation-tool-12')
 
-def retry_operation(retries=3, delay=2, backoff=2):
-    """Decorator to retry network or unstable operations with exponential backoff."""
+def retry_network_operation(max_attempts: int = 3, initial_delay: float = 1.0, backoff_factor: float = 2.0):
+    """
+    Decorator that adds retry logic for network operations.
+    Uses exponential backoff with jitter for practical use in autoclicker.
+    """
     def decorator(func):
-        @functools.wraps(func)
+        @wraps(func)
         def wrapper(*args, **kwargs):
-            current_delay = delay
-            attempt = 0
-            while attempt < retries:
+            attempts = 0
+            delay = initial_delay
+            while attempts < max_attempts:
                 try:
                     return func(*args, **kwargs)
-                except Exception as e:
-                    attempt += 1
-                    if attempt == retries:
-                        logger.error(f"Operation '{func.__name__}' failed after {retries} attempts. Error: {e}")
+                except (ConnectionError, TimeoutError, OSError) as e:
+                    attempts += 1
+                    if attempts >= max_attempts:
+                        # No more retries, re-raise the last exception
                         raise
-                    logger.warning(f"Attempt {attempt} for '{func.__name__}' failed: {e}. Retrying in {current_delay}s...")
-                    time.sleep(current_delay)
-                    current_delay *= backoff
+                    # Calculate next delay with backoff and random jitter
+                    delay = min(delay * backoff_factor, 60)  # cap at 60 seconds
+                    jitter = random.uniform(0, 0.5)
+                    sleep_time = delay + jitter
+                    print(f"Network operation failed (attempt {attempts}/{max_attempts}): {e}")
+                    print(f"Retrying in {sleep_time:.2f} seconds...")
+                    time.sleep(sleep_time)
+            return None  # Unreachable but for type checkers
         return wrapper
     return decorator
 
-@retry_operation(retries=3, delay=1)
-pytget_mock_request():
-    """Example network operation function for the autoclicker remote sync."""
-    import random
-    if random.random() < 0.7:
-        raise ConnectionError("Network unstable")
-    return "Success"
+
+# Practical example for autoclicker: retrying to send click statistics
+@retry_network_operation(max_attempts=4, initial_delay=0.5, backoff_factor=1.5)
+def send_click_data(click_count: int, session_id: str) -> dict:
+    """
+    Simulates sending data over network.
+    In production, replace with actual HTTP request.
+    """
+    # Simulate occasional network issues
+    if random.random() < 0.4:  # 40% failure rate for testing
+        raise ConnectionError("Failed to connect to server")
+    # Simulate successful response
+    return {
+        "status": "ok",
+        "received_clicks": click_count,
+        "session": session_id
+    }
+
+
+# Another example function
+@retry_network_operation(max_attempts=3, initial_delay=2.0)
+def check_for_updates() -> bool:
+    """
+    Simulate checking for tool updates.
+    """
+    if random.random() < 0.2:
+        raise TimeoutError("Update server timeout")
+    return True
+
+
+if __name__ == "__main__":
+    # Demo the retry logic
+    try:
+        result = send_click_data(150, "abc123")
+        print("Success:", result)
+    except Exception as e:
+        print("All retries failed:", e)
+
+    try:
+        has_update = check_for_updates()
+        print("Update available:", has_update)
+    except Exception as e:
+        print("Update check failed after retries:", e)
