@@ -1,28 +1,42 @@
-import logging
-from logging.handlers import RotatingFileHandler
+import json
+from pathlib import Path
+from typing import Any, Dict
 
-# Logger configuration
-LOG_FILE = 'app.log'
-LOG_MAX_BYTES = 5 * 1024 * 1024  # 5 MB
-LOG_BACKUP_COUNT = 3
+DEFAULT_CONFIG: Dict[str, Any] = {
+    "click_interval": 0.1,
+    "mouse_button": "left",
+    "double_click": False,
+    "max_clicks": 0,
+    "toggle_hotkey": "f6",
+    "jitter_range": 0.01,
+}
 
-# Setup logger function
 
-def setup_logger():
-    logger = logging.getLogger('AutoClickerLogger')
-    logger.setLevel(logging.DEBUG)  # Set to DEBUG level for full verbosity
+class ConfigLoader:
+    """Handles loading and saving autoclicker settings with fallback defaults."""
 
-    # Create a rotating file handler
-    handler = RotatingFileHandler(LOG_FILE, maxBytes=LOG_MAX_BYTES, backupCount=LOG_BACKUP_COUNT)
-    handler.setLevel(logging.DEBUG)
+    def __init__(self, config_filename: str = "config.json") -> None:
+        self.config_path = Path(config_filename)
+        self.current_config: Dict[str, Any] = DEFAULT_CONFIG.copy()
 
-    # Create formatter and add it to the handler
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
+    def load(self) -> Dict[str, Any]:
+        """Load config from JSON file, creating default file if absent."""
+        if not self.config_path.exists():
+            self.save(DEFAULT_CONFIG)
+            return self.current_config.copy()
 
-    # Add the handler to the logger
-    logger.addHandler(handler)
-    return logger
+        try:
+            with open(self.config_path, "r", encoding="utf-8") as file:
+                user_data = json.load(file)
+                if isinstance(user_data, dict):
+                    self.current_config.update(user_data)
+        except (json.JSONDecodeError, IOError):
+            pass
 
-# Initialize the logger
-logger = setup_logger()
+        return self.current_config.copy()
+
+    def save(self, data: Dict[str, Any] = None) -> None:
+        """Save configuration dictionary back to disk."""
+        save_data = data if data is not None else self.current_config
+        with open(self.config_path, "w", encoding="utf-8") as file:
+            json.dump(save_data, file, indent=4)
