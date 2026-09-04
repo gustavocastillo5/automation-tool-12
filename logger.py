@@ -1,62 +1,45 @@
 import logging
-import json
 import os
-from datetime import datetime
+from logging.handlers import RotatingFileHandler
 
-def configure_autoclicker_logger(log_level="INFO", log_file="autoclicker.log"):
-    """Set up logging for the autoclicker application."""
-    logger = logging.getLogger("autoclicker")
-    logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
-    if not logger.handlers:
-        file_handler = logging.FileHandler(log_file)
-        file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        file_handler.setFormatter(file_formatter)
-        logger.addHandler(file_handler)
+def setup_logger(name="autoclicker", log_file="logs/autoclicker.log", max_bytes=1048576, backup_count=5):
+    """
+    Configures and returns a logger with both console and rotating file handlers.
+    """
+    # Ensure the log directory exists before initializing the file handler
+    log_dir = os.path.dirname(log_file)
+    if log_dir and not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+
+    # Prevent duplicate handlers if the logger is re-initialized
+    if logger.hasHandlers():
+        logger.handlers.clear()
+
+    # Setup formatting for file and console logs
+    file_formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    console_formatter = logging.Formatter(
+        '%(levelname)s: %(message)s'
+    )
+
+    # Configure the rotating file handler for detailed debugging logs
+    file_handler = RotatingFileHandler(
+        log_file, maxBytes=max_bytes, backupCount=backup_count, encoding='utf-8'
+    )
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(file_formatter)
+
+    # Configure the stream handler for clean stdout display
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(console_formatter)
+
+    # Register both handlers to the logger instance
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
     return logger
-
-class AutoclickerDataLogger:
-    """Utility class for autoclicker data handling and logging."""
-    def __init__(self, data_file="click_data.json"):
-        self.data_file = data_file
-        self.logger = configure_autoclicker_logger()
-        if not os.path.exists(self.data_file):
-            with open(self.data_file, "w") as f:
-                json.dump([], f)
-
-    def log_click(self, x, y, interval, button="left"):
-        """Log click position, interval and button."""
-        entry = {
-            "timestamp": datetime.now().isoformat(),
-            "x": x,
-            "y": y,
-            "interval": interval,
-            "button": button
-        }
-        try:
-            with open(self.data_file, "r+") as f:
-                data = json.load(f)
-                data.append(entry)
-                f.seek(0)
-                json.dump(data, f, indent=2)
-                f.truncate()
-            self.logger.info(f"Logged click at {x},{y}")
-        except Exception as e:
-            self.logger.error(f"Log error: {e}")
-
-    def get_data(self):
-        """Return all logged click data."""
-        try:
-            with open(self.data_file, "r") as f:
-                return json.load(f)
-        except Exception as e:
-            self.logger.error(f"Read error: {e}")
-            return []
-
-    def clear_data(self):
-        """Clear all logged data."""
-        try:
-            with open(self.data_file, "w") as f:
-                json.dump([], f)
-            self.logger.info("Data cleared")
-        except Exception as e:
-            self.logger.error(f"Clear error: {e}")
