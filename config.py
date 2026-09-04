@@ -1,42 +1,30 @@
 import json
-from pathlib import Path
-from typing import Any, Dict
+import os
 
-DEFAULT_CONFIG: Dict[str, Any] = {
-    "click_interval": 0.1,
-    "mouse_button": "left",
-    "double_click": False,
-    "max_clicks": 0,
-    "toggle_hotkey": "f6",
-    "jitter_range": 0.01,
+# default configuration for autoclicker operations
+DEFAULT_CONFIG = {
+    "interval_seconds": 0.1,
+    "click_button": "left",
+    "max_clicks": 1000,
+    "hotkey": "f8"
 }
 
+def load_config(filepath: str) -> dict:
+    """loads configuration from json file or returns defaults"""
+    if not os.path.exists(filepath):
+        return DEFAULT_CONFIG
 
-class ConfigLoader:
-    """Handles loading and saving autoclicker settings with fallback defaults."""
+    try:
+        with open(filepath, 'r') as f:
+            user_config = json.load(f)
+            # merge user settings into defaults
+            config = DEFAULT_CONFIG.copy()
+            config.update(user_config)
+            return config
+    except (json.JSONDecodeError, IOError):
+        return DEFAULT_CONFIG
 
-    def __init__(self, config_filename: str = "config.json") -> None:
-        self.config_path = Path(config_filename)
-        self.current_config: Dict[str, Any] = DEFAULT_CONFIG.copy()
-
-    def load(self) -> Dict[str, Any]:
-        """Load config from JSON file, creating default file if absent."""
-        if not self.config_path.exists():
-            self.save(DEFAULT_CONFIG)
-            return self.current_config.copy()
-
-        try:
-            with open(self.config_path, "r", encoding="utf-8") as file:
-                user_data = json.load(file)
-                if isinstance(user_data, dict):
-                    self.current_config.update(user_data)
-        except (json.JSONDecodeError, IOError):
-            pass
-
-        return self.current_config.copy()
-
-    def save(self, data: Dict[str, Any] = None) -> None:
-        """Save configuration dictionary back to disk."""
-        save_data = data if data is not None else self.current_config
-        with open(self.config_path, "w", encoding="utf-8") as file:
-            json.dump(save_data, file, indent=4)
+def save_config(filepath: str, config: dict) -> None:
+    """persists current configuration to json file"""
+    with open(filepath, 'w') as f:
+        json.dump(config, f, indent=4)
