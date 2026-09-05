@@ -1,59 +1,49 @@
 import time
 import threading
+from typing import Callable, Optional
 
-class CoreAutoClicker:
-    """Optimized core for autoclicker performance."""
 
-    def __init__(self, target_cps=10.0):
-        self.interval = 1.0 / target_cps
-        self.running = False
-        self._thread = None
-        self._positions = []
-        self._current_index = 0
-        self._last_click_time = 0.0
-        self._click_count = 0
+class ClickEngine:
+    """High-precision click execution engine with optimized timing loop."""
 
-    def load_positions(self, positions):
-        """Preload positions to optimize runtime lookups."""
-        self._positions = positions[:]
-        self._current_index = 0
+    def __init__(self, click_action: Callable[[], None]) -> None:
+        self._click_action = click_action
+        self._running = False
+        self._thread: Optional[threading.Thread] = None
+        self.interval: float = 0.01
 
-    def _perform_click(self, x, y):
-        # Core click execution point - optimized for minimal overhead
-        self._click_count += 1
-
-    def _optimized_click_loop(self):
-        """Loop optimized for low latency and accurate timing."""
-        self._last_click_time = time.perf_counter()
-        while self.running:
-            current_time = time.perf_counter()
-            elapsed = current_time - self._last_click_time
-            if elapsed >= self.interval and self._positions:
-                x, y = self._positions[self._current_index]
-                self._perform_click(x, y)
-                self._current_index = (self._current_index + 1) % len(self._positions)
-                self._last_click_time = current_time
-            # Minimal sleep to balance CPU usage and responsiveness
-            time.sleep(0.001)
-
-    def start(self):
-        if self.running or len(self._positions) == 0:
+    def start(self, interval: float) -> None:
+        """Start the auto-clicking loop with specified interval in seconds."""
+        if self._running:
             return
-        self.running = True
-        self._thread = threading.Thread(target=self._optimized_click_loop)
-        self._thread.daemon = True
+        self.interval = max(0.001, interval)
+        self._running = True
+        self._thread = threading.Thread(target=self._run_loop, daemon=True)
         self._thread.start()
 
-    def stop(self):
-        self.running = False
-        if self._thread is not None:
+    def stop(self) -> None:
+        """Stop the click execution loop."""
+        self._running = False
+        if self._thread and self._thread.is_alive():
             self._thread.join(timeout=1.0)
-            self._thread = None
 
-    def get_click_count(self):
-        return self._click_count
+    def _run_loop(self) -> None:
+        """Optimized hybrid timing loop using perf_counter for accuracy."""
+        next_time = time.perf_counter()
+        
+        while self._running:
+            self._click_action()
+            next_time += self.interval
+            
+            # Sleep for bulk duration to conserve CPU, micro-spin for precision
+            sleep_duration = next_time - time.perf_counter()
+            if sleep_duration > 0.002:
+                time.sleep(sleep_duration - 0.001)
+            
+            # Active wait for precise execution timing
+            while time.perf_counter() < next_time:
+                pass
 
-    def set_cps(self, cps):
-        """Dynamically adjust for performance tuning."""
-        if cps > 0:
-            self.interval = 1.0 / cps
+    @property
+    def is_running(self) -> bool:
+        return self._running
