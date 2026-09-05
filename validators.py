@@ -1,38 +1,48 @@
-import time
-import functools
-import logging
+from typing import Tuple, Dict, Any, Union
 
-# Logger setup for automation-tool-12
-logger = logging.getLogger(__name__)
+def validate_interval(interval: Union[int, float]) -> bool:
+    """Validates that the click interval is a positive number (minimum 1ms)."""
+    if not isinstance(interval, (int, float)):
+        return False
+    return interval >= 0.001
 
-def retry_network_op(retries=3, delay=2, backoff=2):
-    """
-    Decorator for retrying network operations with exponential backoff.
-    """
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            current_delay = delay
-            for attempt in range(retries):
-                try:
-                    return func(*args, **kwargs)
-                except (ConnectionError, TimeoutError) as e:
-                    if attempt == retries - 1:
-                        logger.error(f"Final attempt failed for {func.__name__}: {e}")
-                        raise
-                    
-                    logger.warning(f"Attempt {attempt + 1} failed, retrying in {current_delay}s...")
-                    time.sleep(current_delay)
-                    current_delay *= backoff
-            return None
-        return wrapper
-    return decorator
+def validate_coordinates(coords: Tuple[int, int], screen_size: Tuple[int, int] = (1920, 1080)) -> bool:
+    """Validates that target coordinates are within the current screen bounds."""
+    if not isinstance(coords, tuple) or len(coords) != 2:
+        return False
+    x, y = coords
+    if not (isinstance(x, int) and isinstance(y, int)):
+        return False
+    return 0 <= x <= screen_size[0] and 0 <= y <= screen_size[1]
 
-@retry_network_op(retries=3, delay=1)
-def validate_connection(endpoint: str) -> bool:
+def validate_button(button: str) -> bool:
+    """Validates that the specified mouse button is a valid input device key."""
+    if not isinstance(button, str):
+        return False
+    return button.lower() in {"left", "right", "middle"}
+
+def validate_config(config: Dict[str, Any], screen_size: Tuple[int, int] = (1920, 1080)) -> Dict[str, str]:
     """
-    Simulates a network check to a remote server.
+    Performs a comprehensive check on autoclicker settings.
+    Returns a dictionary of found validation errors.
     """
-    # Placeholder for actual network logic
-    logger.info(f"Checking connectivity to {endpoint}")
-    return True
+    errors = {}
+    
+    # Validate Interval
+    if "interval" in config:
+        if not validate_interval(config["interval"]):
+            errors["interval"] = "Interval must be a float or integer representing seconds >= 0.001"
+    else:
+        errors["interval"] = "Missing interval configuration"
+
+    # Validate Optional Coordinates
+    if config.get("coords") is not None:
+        if not validate_coordinates(config["coords"], screen_size):
+            errors["coords"] = f"Coordinates must be an (x, y) tuple within screen bounds {screen_size}"
+
+    # Validate Mouse Button Selection
+    if "button" in config:
+        if not validate_button(config["button"]):
+            errors["button"] = "Button must be one of: 'left', 'right', 'middle'"
+
+    return errors
