@@ -1,50 +1,70 @@
 import time
 import threading
+from typing import Callable, Optional
 
-# Handler for managing autoclick operations in the tool
 class ClickHandler:
-    def __init__(self, interval=0.1):
-        self.interval = interval
-        self.active = False
-        self.thread = None
-        self.stop_flag = threading.Event()
+    """Manages the background thread execution for the autoclicker.
 
-    def initiate_clicking(self):
-        # Start if not already active
-        if self.active:
-            return
-        self.active = True
-        self.stop_flag.clear()
-        self.thread = threading.Thread(target=self._clicking_routine)
-        self.thread.daemon = True
-        self.thread.start()
+    This class handles starting, stopping, and running the autoclick loop
+    with safety checks, a configurable interval, and custom execution actions.
+    """
 
-    def terminate_clicking(self):
-        # Stop the process cleanly
-        if not self.active:
-            return
-        self.active = False
-        self.stop_flag.set()
-        if self.thread is not None:
-            self.thread.join(timeout=1.0)
+    def __init__(self, click_action: Callable[[], None], interval: float = 0.1) -> None:
+        """Initializes the click handler with an action and interval.
 
-    def _clicking_routine(self):
-        # Main loop reorganized for clarity
-        while not self.stop_flag.is_set():
-            self._do_click_action()
+        Args:
+            click_action: A parameterless function executed on every click.
+            interval: Time in seconds to sleep between consecutive clicks.
+        """
+        self.click_action: Callable[[], None] = click_action
+        self.interval: float = interval
+        self._running: bool = False
+        self._thread: Optional[threading.Thread] = None
+
+    def _loop(self) -> None:
+        """Internal execution loop running on a dedicated worker thread."""
+        while self._running:
+            try:
+                self.click_action()
+            except Exception:
+                self._running = False
+                break
             time.sleep(self.interval)
 
-    def _do_click_action(self):
-        # Simulated for this environment
-        print("Simulated click performed.")
+    def start(self) -> bool:
+        """Starts the autoclicking loop in a separate thread.
 
-    def update_interval(self, new_interval):
-        # Validate and set new interval
-        if new_interval > 0:
-            self.interval = new_interval
+        Returns:
+            bool: True if successfully started, False if already running.
+        """
+        if self._running:
+            return False
 
-if __name__ == "__main__":
-    handler = ClickHandler(0.2)
-    handler.initiate_clicking()
-    time.sleep(2)
-    handler.terminate_clicking()
+        self._running = True
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._thread.start()
+        return True
+
+    def stop(self) -> bool:
+        """Stops the autoclicking loop.
+
+        Returns:
+            bool: True if successfully stopped, False if it was not running.
+        """
+        if not self._running:
+            return False
+
+        self._running = False
+        if self._thread is not None:
+            self._thread.join(timeout=1.0)
+            self._thread = None
+        return True
+
+    @property
+    def is_active(self) -> bool:
+        """Checks if the click loop is currently running.
+
+        Returns:
+            bool: Current execution state.
+        """
+        return self._running
