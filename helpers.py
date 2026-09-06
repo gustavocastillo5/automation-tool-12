@@ -1,29 +1,35 @@
-import time
+import logging
 import pyautogui
-from typing import Tuple
+from typing import Tuple, Optional
 
-def get_mouse_position() -> Tuple[int, int]:
-    """Returns the current (x, y) coordinates of the mouse."""
-    return pyautogui.position()
+logger = logging.getLogger(__name__)
 
-def perform_click(x: int, y: int, interval: float = 0.1) -> None:
-    """Moves to coordinates and executes a standard left click."""
-    pyautogui.moveTo(x, y)
-    pyautogui.click()
-    time.sleep(interval)
-
-def wait_for_seconds(seconds: float) -> None:
-    """Pauses execution for a specified duration."""
-    time.sleep(seconds)
-
-def get_screen_resolution() -> Tuple[int, int]:
-    """Returns the width and height of the primary display."""
-    return pyautogui.size()
-
-def safe_exit_check(key: str = 'q') -> bool:
-    """Checks if the specified hotkey is pressed to stop execution."""
+def get_safe_coordinates(x: int, y: int) -> Optional[Tuple[int, int]]:
+    """Validates coordinates against current screen resolution."""
     try:
-        import keyboard
-        return keyboard.is_pressed(key)
-    except ImportError:
+        screen_width, screen_height = pyautogui.size()
+        if 0 <= x < screen_width and 0 <= y < screen_height:
+            return (x, y)
+        logger.warning(f"Coordinates ({x}, {y}) out of screen bounds.")
+        return None
+    except pyautogui.FailSafeException:
+        logger.critical("Fail-safe triggered: mouse moved to corner.")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error validating coordinates: {e}")
+        return None
+
+def perform_safe_click(x: int, y: int, button: str = 'left') -> bool:
+    """Executes a click with boundary and permission validation."""
+    coords = get_safe_coordinates(x, y)
+    if not coords:
         return False
+
+    try:
+        pyautogui.click(x=coords[0], y=coords[1], button=button)
+        return True
+    except pyautogui.ImageNotFoundException:
+        logger.error("Target element not found on screen.")
+    except Exception as e:
+        logger.error(f"Click execution failed: {e}")
+    return False
