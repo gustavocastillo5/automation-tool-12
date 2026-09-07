@@ -1,33 +1,32 @@
-# Constants used throughout the autoclicker tool
+import platform
 
-# Default configuration settings
-DEFAULT_CLICK_INTERVAL = 0.1  # in seconds
-DEFAULT_BUTTON = 'left'
-DEFAULT_REPEAT_COUNT = 100
+# Application configuration constants
+APP_NAME = "automation-tool-12"
+VERSION = "1.0.0"
 
-# Predefined mouse actions
-MOUSE_ACTIONS = {
-    'left_click': 'left',
-    'right_click': 'right',
-    'double_click': 'double',
-}
+# Timing and execution defaults
+DEFAULT_CLICK_INTERVAL = 0.5
+MIN_INTERVAL = 0.01
+MAX_INTERVAL = 60.0
 
-# Application settings
-WINDOW_TITLE = 'Autoclicker'
-MAXIMUM_CLICKS_PER_SECOND = 20
+# Platform identification for OS-specific hooks
+IS_WINDOWS = platform.system() == "Windows"
+IS_MACOS = platform.system() == "Darwin"
+IS_LINUX = platform.system() == "Linux"
 
-# File paths
-CONFIG_FILE_PATH = 'config.json'
-LOG_FILE_PATH = 'autoclicker.log'
+# UI and layout parameters
+WINDOW_WIDTH = 400
+WINDOW_HEIGHT = 300
 
-# Message constants
-ERROR_MESSAGES = {
-    'file_not_found': 'The specified file could not be found.',
-    'invalid_configuration': 'Configuration is invalid or missing required keys.',
-}
+# Mouse button identifiers
+BUTTON_LEFT = "left"
+BUTTON_RIGHT = "right"
+BUTTON_MIDDLE = "middle"
 
-# Success messages
-SUCCESS_MESSAGES = {
-    'operation_complete': 'The operation completed successfully.',
-    'clicks_executed': 'Clicks have been executed.',
-}
+# Validation ranges
+MAX_RETRIES = 3
+TIMEOUT_SECONDS = 5.0
+
+# Exit codes
+EXIT_SUCCESS = 0
+EXIT_ERROR = 1
