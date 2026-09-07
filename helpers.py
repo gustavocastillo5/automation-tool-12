@@ -1,35 +1,44 @@
-import logging
-import pyautogui
-from typing import Tuple, Optional
+import random
+import time
+from typing import Tuple
 
-logger = logging.getLogger(__name__)
 
-def get_safe_coordinates(x: int, y: int) -> Optional[Tuple[int, int]]:
-    """Validates coordinates against current screen resolution."""
-    try:
-        screen_width, screen_height = pyautogui.size()
-        if 0 <= x < screen_width and 0 <= y < screen_height:
-            return (x, y)
-        logger.warning(f"Coordinates ({x}, {y}) out of screen bounds.")
-        return None
-    except pyautogui.FailSafeException:
-        logger.critical("Fail-safe triggered: mouse moved to corner.")
-        return None
-    except Exception as e:
-        logger.error(f"Unexpected error validating coordinates: {e}")
-        return None
+def calculate_jittered_point(
+    point: Tuple[int, int], max_jitter: int = 3
+) -> Tuple[int, int]:
+    """Applies random pixel offsets to simulate human mouse precision."""
+    x, y = point
+    offset_x = random.randint(-max_jitter, max_jitter)
+    offset_y = random.randint(-max_jitter, max_jitter)
+    return (max(0, x + offset_x), max(0, y + offset_y))
 
-def perform_safe_click(x: int, y: int, button: str = 'left') -> bool:
-    """Executes a click with boundary and permission validation."""
-    coords = get_safe_coordinates(x, y)
-    if not coords:
-        return False
 
-    try:
-        pyautogui.click(x=coords[0], y=coords[1], button=button)
-        return True
-    except pyautogui.ImageNotFoundException:
-        logger.error("Target element not found on screen.")
-    except Exception as e:
-        logger.error(f"Click execution failed: {e}")
-    return False
+def generate_human_delay(
+    base_delay: float, variance_ratio: float = 0.15
+) -> float:
+    """Calculates a randomized delay duration based on base value and variance."""
+    if base_delay <= 0:
+        return 0.0
+    min_delay = base_delay * (1.0 - variance_ratio)
+    max_delay = base_delay * (1.0 + variance_ratio)
+    return max(0.001, random.uniform(min_delay, max_delay))
+
+
+def is_valid_screen_position(
+    point: Tuple[int, int], screen_bounds: Tuple[int, int]
+) -> bool:
+    """Checks if a target click point falls within valid screen boundaries."""
+    x, y = point
+    max_x, max_y = screen_bounds
+    return 0 <= x <= max_x and 0 <= y <= max_y
+
+
+def sleep_with_interruption(
+    duration: float, check_interval: float = 0.05
+) -> bool:
+    """Sleeps for duration while allowing periodic execution pause checks."""
+    end_time = time.time() + duration
+    while time.time() < end_time:
+        remaining = end_time - time.time()
+        time.sleep(min(remaining, check_interval))
+    return True
