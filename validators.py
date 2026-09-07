@@ -1,48 +1,59 @@
-from typing import Tuple, Dict, Any, Union
+"""Validation utilities for autoclicker configuration and parameters."""
 
-def validate_interval(interval: Union[int, float]) -> bool:
-    """Validates that the click interval is a positive number (minimum 1ms)."""
+from typing import Dict, Any, Tuple
+
+
+class ValidationError(Exception):
+    """Custom exception raised when input validation fails."""
+    pass
+
+
+def validate_click_interval(interval: float) -> float:
+    """Ensure click interval is positive and within acceptable bounds."""
     if not isinstance(interval, (int, float)):
-        return False
-    return interval >= 0.001
+        raise ValidationError(f"Interval must be a number, got {type(interval).__name__}")
+    if interval < 0.001:
+        raise ValidationError("Interval must be at least 0.001 seconds (1ms)")
+    if interval > 3600:
+        raise ValidationError("Interval cannot exceed 3600 seconds (1 hour)")
+    return float(interval)
 
-def validate_coordinates(coords: Tuple[int, int], screen_size: Tuple[int, int] = (1920, 1080)) -> bool:
-    """Validates that target coordinates are within the current screen bounds."""
-    if not isinstance(coords, tuple) or len(coords) != 2:
-        return False
+
+def validate_coordinates(coords: Tuple[int, int], screen_size: Tuple[int, int]) -> Tuple[int, int]:
+    """Validate click coordinates against target screen boundaries."""
+    if not isinstance(coords, (tuple, list)) or len(coords) != 2:
+        raise ValidationError("Coordinates must be a tuple of (x, y)")
+    
     x, y = coords
     if not (isinstance(x, int) and isinstance(y, int)):
-        return False
-    return 0 <= x <= screen_size[0] and 0 <= y <= screen_size[1]
-
-def validate_button(button: str) -> bool:
-    """Validates that the specified mouse button is a valid input device key."""
-    if not isinstance(button, str):
-        return False
-    return button.lower() in {"left", "right", "middle"}
-
-def validate_config(config: Dict[str, Any], screen_size: Tuple[int, int] = (1920, 1080)) -> Dict[str, str]:
-    """
-    Performs a comprehensive check on autoclicker settings.
-    Returns a dictionary of found validation errors.
-    """
-    errors = {}
+        raise ValidationError("Coordinate values must be integers")
     
-    # Validate Interval
-    if "interval" in config:
-        if not validate_interval(config["interval"]):
-            errors["interval"] = "Interval must be a float or integer representing seconds >= 0.001"
-    else:
-        errors["interval"] = "Missing interval configuration"
+    max_x, max_y = screen_size
+    if x < 0 or x > max_x or y < 0 or y > max_y:
+        raise ValidationError(f"Coordinates ({x}, {y}) out of screen bounds ({max_x}x{max_y})")
+    
+    return int(x), int(y)
 
-    # Validate Optional Coordinates
-    if config.get("coords") is not None:
-        if not validate_coordinates(config["coords"], screen_size):
-            errors["coords"] = f"Coordinates must be an (x, y) tuple within screen bounds {screen_size}"
 
-    # Validate Mouse Button Selection
-    if "button" in config:
-        if not validate_button(config["button"]):
-            errors["button"] = "Button must be one of: 'left', 'right', 'middle'"
-
-    return errors
+def validate_click_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate entire click configuration before execution loop."""
+    required_keys = {"interval", "click_type", "repeat_count"}
+    missing = required_keys - set(config.keys())
+    if missing:
+        raise ValidationError(f"Missing required config fields: {', '.join(missing)}")
+    
+    valid_types = {"left", "right", "middle", "double"}
+    if config["click_type"] not in valid_types:
+        raise ValidationError(f"Invalid click_type '{config['click_type']}'. Must be one of {valid_types}")
+    
+    repeat = config["repeat_count"]
+    if not isinstance(repeat, int) or repeat < 0:
+        raise ValidationError("repeat_count must be a non-negative integer")
+    
+    config["interval"] = validate_click_interval(config["interval"])
+    
+    if "target_pos" in config and config["target_pos"] is not None:
+        screen = config.get("screen_size", (1920, 1080))
+        config["target_pos"] = validate_coordinates(config["target_pos"], screen)
+        
+    return config
