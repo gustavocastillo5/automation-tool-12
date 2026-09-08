@@ -1,35 +1,29 @@
 import time
-import logging
+import pyautogui
+from typing import Dict, Any
 
-# Configure basic logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('automation-tool-12')
+class ClickProcessor:
+    """Handles execution of click sequences based on provided configuration."""
 
-def validate_inputs(clicks, interval):
-    """Ensures click count and interval are within safe parameters."""
-    if not isinstance(clicks, int) or clicks <= 0:
-        raise ValueError("Click count must be a positive integer.")
-    if not isinstance(interval, (int, float)) or interval < 0.1:
-        raise ValueError("Interval must be at least 0.1 seconds.")
-    return True
+    def __init__(self, config: Dict[str, Any]):
+        self.interval = config.get('interval', 0.1)
+        self.clicks = config.get('clicks', 1)
+        self.button = config.get('button', 'left')
 
-def run_clicker(clicks: int, interval: float):
-    """Main processing loop with input validation."""
-    try:
-        validate_inputs(clicks, interval)
-        logger.info(f"Starting automation for {clicks} clicks.")
-        
-        for i in range(1, clicks + 1):
-            # Simulate mouse click logic here
-            logger.debug(f"Executing click {i}/{clicks}")
-            time.sleep(interval)
-            
-        logger.info("Automation sequence completed successfully.")
-    except ValueError as e:
-        logger.error(f"Validation failure: {e}")
-    except Exception as e:
-        logger.error(f"Unexpected error during execution: {e}")
+    def execute_sequence(self, coordinates: list) -> None:
+        """Iterates through coordinate list and performs automated clicks."""
+        for x, y in coordinates:
+            try:
+                pyautogui.click(x=x, y=y, clicks=self.clicks, button=self.button)
+                time.sleep(self.interval)
+            except pyautogui.FailSafeException:
+                print("Fail-safe triggered: stopping processor.")
+                break
+            except Exception as e:
+                print(f"Click error at ({x}, {y}): {e}")
 
-if __name__ == '__main__':
-    # Example usage for testing loop stability
-    run_clicker(5, 0.5)
+    def set_config(self, new_config: Dict[str, Any]) -> None:
+        """Updates click execution parameters."""
+        self.interval = new_config.get('interval', self.interval)
+        self.clicks = new_config.get('clicks', self.clicks)
+        self.button = new_config.get('button', self.button)
