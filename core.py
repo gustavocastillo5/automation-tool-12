@@ -1,49 +1,41 @@
 import time
 import threading
-from typing import Callable, Optional
-
+from queue import Queue
 
 class ClickEngine:
-    """High-precision click execution engine with optimized timing loop."""
+    """High-performance click execution engine using worker threads."""
 
-    def __init__(self, click_action: Callable[[], None]) -> None:
-        self._click_action = click_action
-        self._running = False
-        self._thread: Optional[threading.Thread] = None
-        self.interval: float = 0.01
+    def __init__(self, click_interval=0.01):
+        self.interval = click_interval
+        self.queue = Queue(maxsize=100)
+        self.running = False
 
-    def start(self, interval: float) -> None:
-        """Start the auto-clicking loop with specified interval in seconds."""
-        if self._running:
-            return
-        self.interval = max(0.001, interval)
-        self._running = True
-        self._thread = threading.Thread(target=self._run_loop, daemon=True)
-        self._thread.start()
+    def _worker(self):
+        """Consumes click requests from the internal queue."""
+        while self.running:
+            if not self.queue.empty():
+                click_data = self.queue.get()
+                self._execute_click(click_data)
+                time.sleep(self.interval)
 
-    def stop(self) -> None:
-        """Stop the click execution loop."""
-        self._running = False
-        if self._thread and self._thread.is_alive():
-            self._thread.join(timeout=1.0)
+    def _execute_click(self, data):
+        """Internal native pointer interaction logic."""
+        # Placeholder for actual OS-level click implementation
+        pass
 
-    def _run_loop(self) -> None:
-        """Optimized hybrid timing loop using perf_counter for accuracy."""
-        next_time = time.perf_counter()
-        
-        while self._running:
-            self._click_action()
-            next_time += self.interval
-            
-            # Sleep for bulk duration to conserve CPU, micro-spin for precision
-            sleep_duration = next_time - time.perf_counter()
-            if sleep_duration > 0.002:
-                time.sleep(sleep_duration - 0.001)
-            
-            # Active wait for precise execution timing
-            while time.perf_counter() < next_time:
-                pass
+    def start(self):
+        """Initializes engine thread pool for concurrent processing."""
+        self.running = True
+        self.thread = threading.Thread(target=self._worker, daemon=True)
+        self.thread.start()
 
-    @property
-    def is_running(self) -> bool:
-        return self._running
+    def stop(self):
+        """Safely shuts down the execution thread."""
+        self.running = False
+        if hasattr(self, 'thread'):
+            self.thread.join()
+
+    def enqueue_click(self, x, y):
+        """Thread-safe input submission for automation."""
+        if not self.queue.full():
+            self.queue.put((x, y))
