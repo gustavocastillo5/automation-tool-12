@@ -1,77 +1,41 @@
 import time
-import random
+import logging
 from functools import wraps
+from typing import Callable, Any, Type, Tuple
 
+logger = logging.getLogger("automation_tool.utils")
 
-def retry_network_operation(max_attempts: int = 3, initial_delay: float = 1.0, backoff_factor: float = 2.0):
+def retry(
+    exceptions: Tuple[Type[BaseException], ...] = (Exception,),
+    tries: int = 3,
+    delay: float = 1.0,
+    backoff: float = 2.0
+) -> Callable:
     """
-    Decorator that adds retry logic for network operations.
-    Uses exponential backoff with jitter for practical use in autoclicker.
+    Decorator that retries a function call with exponential backoff.
+    
+    :param exceptions: A tuple of exceptions to catch.
+    :param tries: Total number of execution attempts.
+    :param delay: Initial delay between retries in seconds.
+    :param backoff: Multiplier applied to delay after each failure.
     """
-    def decorator(func):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        def wrapper(*args, **kwargs):
-            attempts = 0
-            delay = initial_delay
-            while attempts < max_attempts:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            attempt_delay = delay
+            for attempt in range(1, tries + 1):
                 try:
                     return func(*args, **kwargs)
-                except (ConnectionError, TimeoutError, OSError) as e:
-                    attempts += 1
-                    if attempts >= max_attempts:
-                        # No more retries, re-raise the last exception
+                except exceptions as e:
+                    if attempt == tries:
+                        logger.error(f"Failed '{func.__name__}' after {tries} attempts due to: {e}")
                         raise
-                    # Calculate next delay with backoff and random jitter
-                    delay = min(delay * backoff_factor, 60)  # cap at 60 seconds
-                    jitter = random.uniform(0, 0.5)
-                    sleep_time = delay + jitter
-                    print(f"Network operation failed (attempt {attempts}/{max_attempts}): {e}")
-                    print(f"Retrying in {sleep_time:.2f} seconds...")
-                    time.sleep(sleep_time)
-            return None  # Unreachable but for type checkers
+                    logger.warning(
+                        f"Retrying '{func.__name__}' in {attempt_delay:.2f} seconds... "
+                        f"(Attempt {attempt}/{tries}) due to error: {e}"
+                    )
+                    time.sleep(attempt_delay)
+                    attempt_delay *= backoff
+            return func(*args, **kwargs)
         return wrapper
     return decorator
-
-
-# Practical example for autoclicker: retrying to send click statistics
-@retry_network_operation(max_attempts=4, initial_delay=0.5, backoff_factor=1.5)
-def send_click_data(click_count: int, session_id: str) -> dict:
-    """
-    Simulates sending data over network.
-    In production, replace with actual HTTP request.
-    """
-    # Simulate occasional network issues
-    if random.random() < 0.4:  # 40% failure rate for testing
-        raise ConnectionError("Failed to connect to server")
-    # Simulate successful response
-    return {
-        "status": "ok",
-        "received_clicks": click_count,
-        "session": session_id
-    }
-
-
-# Another example function
-@retry_network_operation(max_attempts=3, initial_delay=2.0)
-def check_for_updates() -> bool:
-    """
-    Simulate checking for tool updates.
-    """
-    if random.random() < 0.2:
-        raise TimeoutError("Update server timeout")
-    return True
-
-
-if __name__ == "__main__":
-    # Demo the retry logic
-    try:
-        result = send_click_data(150, "abc123")
-        print("Success:", result)
-    except Exception as e:
-        print("All retries failed:", e)
-
-    try:
-        has_update = check_for_updates()
-        print("Update available:", has_update)
-    except Exception as e:
-        print("Update check failed after retries:", e)
