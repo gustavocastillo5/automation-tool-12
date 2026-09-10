@@ -1,43 +1,55 @@
 import logging
-import os
+import sys
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
+
 
 def setup_logger(
-    log_file="autoclicker.log",
-    level=logging.INFO,
-    max_bytes=5 * 1024 * 1024,
-    backup_count=3
-):
-    """Configures and returns a logger instance with file rotation."""
-    logger = logging.getLogger("automation_tool")
+    name: str = "autoclicker",
+    log_dir: str = "logs",
+    log_file: str = "autoclicker.log",
+    max_bytes: int = 1024 * 1024,
+    backup_count: int = 3,
+    level: int = logging.INFO,
+) -> logging.Logger:
+    """Configures and returns a logger instance with stream and rotating file output."""
+    logger = logging.getLogger(name)
     logger.setLevel(level)
 
+    # Prevent duplicate handlers if re-initialized
     if logger.handlers:
         return logger
 
+    # Ensure target directory exists
+    log_path = Path(log_dir)
+    log_path.mkdir(parents=True, exist_ok=True)
+    full_path = log_path / log_file
+
+    # Standard output formatting
     formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        "%(asctime)s [%(levelname)s] %(name)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    console_handler = logging.StreamHandler()
+    # Console output handler
+    console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
+    console_handler.setLevel(level)
     logger.addHandler(console_handler)
 
-    log_dir = os.path.dirname(log_file)
-    if log_dir:
-        os.makedirs(log_dir, exist_ok=True)
-
+    # Size-based rotating log file handler
     file_handler = RotatingFileHandler(
-        log_file,
+        filename=full_path,
         maxBytes=max_bytes,
         backupCount=backup_count,
-        encoding="utf-8"
+        encoding="utf-8",
     )
     file_handler.setFormatter(formatter)
+    file_handler.setLevel(level)
     logger.addHandler(file_handler)
 
     return logger
 
-if __name__ == "__main__":
-    app_logger = setup_logger()
-    app_logger.info("Logger initialized successfully.")
+
+# Default logger instance for direct import across modules
+logger = setup_logger()
