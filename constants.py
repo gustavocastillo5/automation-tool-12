@@ -1,32 +1,29 @@
-import platform
+import sys
 
-# Application configuration constants
-APP_NAME = "automation-tool-12"
-VERSION = "1.0.0"
+# Configuration constraints for the autoclicker
+# Used to prevent invalid user inputs and system crashes
 
-# Timing and execution defaults
-DEFAULT_CLICK_INTERVAL = 0.5
-MIN_INTERVAL = 0.01
-MAX_INTERVAL = 60.0
+MIN_INTERVAL = 0.01  # Minimum delay in seconds
+MAX_INTERVAL = 60.0  # Maximum delay in seconds
+MAX_RETRIES = 3      # Connection retry attempts
 
-# Platform identification for OS-specific hooks
-IS_WINDOWS = platform.system() == "Windows"
-IS_MACOS = platform.system() == "Darwin"
-IS_LINUX = platform.system() == "Linux"
+# System specific error codes
+ERR_OS_UNSUPPORTED = 1
+ERR_PERMISSION_DENIED = 2
+ERR_INVALID_CONFIG = 3
 
-# UI and layout parameters
-WINDOW_WIDTH = 400
-WINDOW_HEIGHT = 300
+def validate_interval(value: float) -> bool:
+    """Ensures interval is within safe operating bounds."""
+    try:
+        return MIN_INTERVAL <= float(value) <= MAX_INTERVAL
+    except (ValueError, TypeError):
+        return False
 
-# Mouse button identifiers
-BUTTON_LEFT = "left"
-BUTTON_RIGHT = "right"
-BUTTON_MIDDLE = "middle"
+def exit_with_error(message: str, code: int) -> None:
+    """Standardized exit path for fatal tool errors."""
+    print(f"[ERROR] {message}", file=sys.stderr)
+    sys.exit(code)
 
-# Validation ranges
-MAX_RETRIES = 3
-TIMEOUT_SECONDS = 5.0
-
-# Exit codes
-EXIT_SUCCESS = 0
-EXIT_ERROR = 1
+# Application path constants
+DEFAULT_CONFIG_PATH = "config.json"
+LOG_FILE_PATH = "automation.log"
