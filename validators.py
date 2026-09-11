@@ -1,50 +1,25 @@
-from typing import Union, Tuple
+import re
 
-def validate_coordinates(x: int, y: int) -> bool:
-    """
-    Checks if coordinates fall within typical screen bounds.
-    
-    Args:
-        x: The horizontal screen position.
-        y: The vertical screen position.
-        
-    Returns:
-        bool: True if coordinates are non-negative.
-    """
-    return x >= 0 and y >= 0
+def validate_coordinate(x: int, y: int, screen_width: int, screen_height: int) -> bool:
+    """Checks if coordinates are within screen boundaries."""
+    return 0 <= x < screen_width and 0 <= y < screen_height
 
-def validate_interval(interval: Union[int, float]) -> bool:
-    """
-    Validates that the click interval is a positive value.
-    
-    Args:
-        interval: The time delay between clicks in seconds.
-        
-    Returns:
-        bool: True if interval is greater than zero.
-    """
-    return interval > 0
+def validate_interval(interval: float) -> bool:
+    """Ensures click interval is within safe operational limits."""
+    return 0.01 <= interval <= 60.0
+
+def validate_key_string(key: str) -> bool:
+    """Validates that a key input string is non-empty and simple."""
+    return bool(re.match(r'^[a-zA-Z0-9]+$', key))
 
 def validate_click_count(count: int) -> bool:
-    """
-    Ensures the requested click count is valid.
-    
-    Args:
-        count: Total number of clicks to perform.
-        
-    Returns:
-        bool: True if count is non-negative.
-    """
-    return count >= 0
+    """Checks for positive click iteration counts."""
+    return count > 0 or count == -1
 
-def validate_hotkey(key: str) -> bool:
-    """
-    Validates that the provided hotkey string is not empty.
-    
-    Args:
-        key: The string representation of the trigger key.
-        
-    Returns:
-        bool: True if the key is valid.
-    """
-    return isinstance(key, str) and len(key) > 0
+def sanitize_config(data: dict) -> dict:
+    """Filters out invalid entries from configuration dictionary."""
+    sanitized = {}
+    for key, value in data.items():
+        if value is not None:
+            sanitized[key] = value
+    return sanitized
