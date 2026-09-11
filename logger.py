@@ -1,47 +1,32 @@
 import logging
-import os
 from logging.handlers import RotatingFileHandler
+import os
 
-LOG_DIR = "logs"
-LOG_FILE = "autoclicker.log"
-MAX_BYTES = 1_048_576  # 1 MB log file limit
-BACKUP_COUNT = 5       # Keep up to 5 historical log files
-
-def setup_logger(name: str = "autoclicker", log_level: int = logging.INFO) -> logging.Logger:
-    """Configures and returns a logger with console and rotating file handlers."""
-    os.makedirs(LOG_DIR, exist_ok=True)
-    log_path = os.path.join(LOG_DIR, LOG_FILE)
-
+def setup_logger(name='automation-tool', log_file='automation.log'):
+    """Initializes a rotating file logger for the autoclicker."""
     logger = logging.getLogger(name)
-    logger.setLevel(log_level)
+    logger.setLevel(logging.INFO)
 
-    # Prevent adding duplicate handlers if function is invoked multiple times
-    if logger.handlers:
-        return logger
+    # Prevent duplicate handlers if re-initialized
+    if not logger.handlers:
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
 
-    formatter = logging.Formatter(
-        "[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
-    )
+        # Rotate logs after 1MB, keep 3 backup files
+        file_handler = RotatingFileHandler(
+            log_file, maxBytes=1*1024*1024, backupCount=3
+        )
+        file_handler.setFormatter(formatter)
 
-    # Console output handler for live CLI monitoring
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    console_handler.setLevel(log_level)
-    logger.addHandler(console_handler)
+        # Add stream handler for console output
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
 
-    # Rotating file handler to prevent excessive disk usage
-    file_handler = RotatingFileHandler(
-        log_path,
-        maxBytes=MAX_BYTES,
-        backupCount=BACKUP_COUNT,
-        encoding="utf-8"
-    )
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(log_level)
-    logger.addHandler(file_handler)
+        logger.addHandler(file_handler)
+        logger.addHandler(console_handler)
 
     return logger
 
-# Default logger instance for the automation tool
+# Instantiate default logger for the project
 logger = setup_logger()
