@@ -1,55 +1,47 @@
 import logging
-import sys
+import os
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
 
+LOG_DIR = "logs"
+LOG_FILE = "autoclicker.log"
+MAX_BYTES = 1_048_576  # 1 MB log file limit
+BACKUP_COUNT = 5       # Keep up to 5 historical log files
 
-def setup_logger(
-    name: str = "autoclicker",
-    log_dir: str = "logs",
-    log_file: str = "autoclicker.log",
-    max_bytes: int = 1024 * 1024,
-    backup_count: int = 3,
-    level: int = logging.INFO,
-) -> logging.Logger:
-    """Configures and returns a logger instance with stream and rotating file output."""
+def setup_logger(name: str = "autoclicker", log_level: int = logging.INFO) -> logging.Logger:
+    """Configures and returns a logger with console and rotating file handlers."""
+    os.makedirs(LOG_DIR, exist_ok=True)
+    log_path = os.path.join(LOG_DIR, LOG_FILE)
+
     logger = logging.getLogger(name)
-    logger.setLevel(level)
+    logger.setLevel(log_level)
 
-    # Prevent duplicate handlers if re-initialized
+    # Prevent adding duplicate handlers if function is invoked multiple times
     if logger.handlers:
         return logger
 
-    # Ensure target directory exists
-    log_path = Path(log_dir)
-    log_path.mkdir(parents=True, exist_ok=True)
-    full_path = log_path / log_file
-
-    # Standard output formatting
     formatter = logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(name)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
+        "[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
     )
 
-    # Console output handler
-    console_handler = logging.StreamHandler(sys.stdout)
+    # Console output handler for live CLI monitoring
+    console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
-    console_handler.setLevel(level)
+    console_handler.setLevel(log_level)
     logger.addHandler(console_handler)
 
-    # Size-based rotating log file handler
+    # Rotating file handler to prevent excessive disk usage
     file_handler = RotatingFileHandler(
-        filename=full_path,
-        maxBytes=max_bytes,
-        backupCount=backup_count,
-        encoding="utf-8",
+        log_path,
+        maxBytes=MAX_BYTES,
+        backupCount=BACKUP_COUNT,
+        encoding="utf-8"
     )
     file_handler.setFormatter(formatter)
-    file_handler.setLevel(level)
+    file_handler.setLevel(log_level)
     logger.addHandler(file_handler)
 
     return logger
 
-
-# Default logger instance for direct import across modules
+# Default logger instance for the automation tool
 logger = setup_logger()
