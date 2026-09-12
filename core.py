@@ -1,31 +1,38 @@
 import pyautogui
 import time
-from typing import Tuple
+import logging
 
-class ClickerCore:
-    """Handles the automated clicking operations for the tool."""
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('automation-tool-12')
 
-    def __init__(self, interval: float = 0.1) -> None:
-        """Initialize core with click interval in seconds."""
-        self.interval: float = interval
+def perform_click(x: int, y: int, interval: float = 0.1):
+    """Executes a safe click operation with boundary checks."""
+    try:
+        screen_width, screen_height = pyautogui.size()
+        
+        if not (0 <= x <= screen_width and 0 <= y <= screen_height):
+            logger.error(f"coordinates ({x}, {y}) out of screen bounds")
+            return False
+            
+        if interval < 0:
+            logger.warning("negative interval provided, resetting to default")
+            interval = 0.1
 
-    def perform_click(self, coordinates: Tuple[int, int]) -> None:
-        """Executes a mouse click at specific screen coordinates."""
-        x, y = coordinates
-        pyautogui.click(x=x, y=y)
-        time.sleep(self.interval)
+        pyautogui.click(x, y)
+        time.sleep(interval)
+        return True
+        
+    except pyautogui.FailSafeException:
+        logger.critical("failsafe triggered, aborting operation")
+        return False
+    except Exception as e:
+        logger.error(f"unexpected execution error: {e}")
+        return False
 
-    def perform_sequence(self, coordinates_list: list[Tuple[int, int]], count: int) -> None:
-        """Iterates through a list of coordinates for a set number of cycles."""
-        for _ in range(count):
-            for coords in coordinates_list:
-                self.perform_click(coords)
-
-    def get_mouse_position(self) -> Tuple[int, int]:
-        """Retrieves the current cursor location on the screen."""
-        return pyautogui.position()
-
-def validate_coordinates(x: int, y: int) -> bool:
-    """Checks if coordinates are within standard screen bounds."""
-    screen_width, screen_height = pyautogui.size()
-    return 0 <= x <= screen_width and 0 <= y <= screen_height
+def run_automation(coords: list, duration: float):
+    """Iterates through click tasks with error handling."""
+    for x, y in coords:
+        success = perform_click(x, y, duration)
+        if not success:
+            logger.info("skipping coordinate due to error")
+            continue
