@@ -1,41 +1,58 @@
+import random
 import time
-import logging
-from functools import wraps
-from typing import Callable, Any, Type, Tuple
+from typing import Tuple
 
-logger = logging.getLogger("automation_tool.utils")
 
-def retry(
-    exceptions: Tuple[Type[BaseException], ...] = (Exception,),
-    tries: int = 3,
-    delay: float = 1.0,
-    backoff: float = 2.0
-) -> Callable:
+def calculate_jitter_delay(base_delay: float, jitter: float) -> float:
+    """Calculate a randomized delay duration to simulate human clicking.
+
+    Args:
+        base_delay: The target delay between clicks in seconds.
+        jitter: The maximum percentage variance allowed (0.0 to 1.0).
+
+    Returns:
+        A randomized delay time in seconds.
     """
-    Decorator that retries a function call with exponential backoff.
-    
-    :param exceptions: A tuple of exceptions to catch.
-    :param tries: Total number of execution attempts.
-    :param delay: Initial delay between retries in seconds.
-    :param backoff: Multiplier applied to delay after each failure.
+    if jitter <= 0:
+        return max(0.0, base_delay)
+
+    variance = base_delay * min(jitter, 1.0)
+    low = max(0.0, base_delay - variance)
+    high = base_delay + variance
+    return random.uniform(low, high)
+
+
+def parse_coordinate_string(coord_str: str) -> Tuple[int, int]:
+    """Parse a formatted string 'X,Y' into an integer coordinate tuple.
+
+    Args:
+        coord_str: A string representing coordinates in 'X,Y' format.
+
+    Returns:
+        A tuple containing (x, y) integer coordinates.
+
+    Raises:
+        ValueError: If the string format is invalid or non-numeric.
     """
-    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-        @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            attempt_delay = delay
-            for attempt in range(1, tries + 1):
-                try:
-                    return func(*args, **kwargs)
-                except exceptions as e:
-                    if attempt == tries:
-                        logger.error(f"Failed '{func.__name__}' after {tries} attempts due to: {e}")
-                        raise
-                    logger.warning(
-                        f"Retrying '{func.__name__}' in {attempt_delay:.2f} seconds... "
-                        f"(Attempt {attempt}/{tries}) due to error: {e}"
-                    )
-                    time.sleep(attempt_delay)
-                    attempt_delay *= backoff
-            return func(*args, **kwargs)
-        return wrapper
-    return decorator
+    parts = coord_str.strip().split(",")
+    if len(parts) != 2:
+        raise ValueError("Coordinates must be in 'X,Y' format")
+
+    x_val, y_val = parts[0].strip(), parts[1].strip()
+    return int(x_val), int(y_val)
+
+
+def sleep_with_precision(duration: float) -> None:
+    """Pause execution for a specific duration using high-precision sleep.
+
+    Args:
+        duration: Total sleep duration in seconds.
+    """
+    if duration <= 0:
+        return
+
+    end_time = time.perf_counter() + duration
+    while time.perf_counter() < end_time:
+        remaining = end_time - time.perf_counter()
+        if remaining > 0.002:
+            time.sleep(remaining - 0.001)
