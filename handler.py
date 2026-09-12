@@ -1,70 +1,31 @@
-import time
-import threading
-from typing import Callable, Optional
+import json
+import os
 
-class ClickHandler:
-    """Manages the background thread execution for the autoclicker.
-
-    This class handles starting, stopping, and running the autoclick loop
-    with safety checks, a configurable interval, and custom execution actions.
-    """
-
-    def __init__(self, click_action: Callable[[], None], interval: float = 0.1) -> None:
-        """Initializes the click handler with an action and interval.
-
-        Args:
-            click_action: A parameterless function executed on every click.
-            interval: Time in seconds to sleep between consecutive clicks.
-        """
-        self.click_action: Callable[[], None] = click_action
-        self.interval: float = interval
-        self._running: bool = False
-        self._thread: Optional[threading.Thread] = None
-
-    def _loop(self) -> None:
-        """Internal execution loop running on a dedicated worker thread."""
-        while self._running:
-            try:
-                self.click_action()
-            except Exception:
-                self._running = False
-                break
-            time.sleep(self.interval)
-
-    def start(self) -> bool:
-        """Starts the autoclicking loop in a separate thread.
-
-        Returns:
-            bool: True if successfully started, False if already running.
-        """
-        if self._running:
-            return False
-
-        self._running = True
-        self._thread = threading.Thread(target=self._loop, daemon=True)
-        self._thread.start()
+def save_click_profile(profile_name, data):
+    """Persist autoclicker configuration to local json file."""
+    file_path = f"profiles/{profile_name}.json"
+    os.makedirs("profiles", exist_ok=True)
+    try:
+        with open(file_path, 'w') as f:
+            json.dump(data, f, indent=4)
         return True
+    except (IOError, TypeError) as e:
+        print(f"Storage error: {e}")
+        return False
 
-    def stop(self) -> bool:
-        """Stops the autoclicking loop.
+def load_click_profile(profile_name):
+    """Load existing click pattern from storage."""
+    file_path = f"profiles/{profile_name}.json"
+    if not os.path.exists(file_path):
+        return None
+    try:
+        with open(file_path, 'r') as f:
+            return json.load(f)
+    except json.JSONDecodeError:
+        return None
 
-        Returns:
-            bool: True if successfully stopped, False if it was not running.
-        """
-        if not self._running:
-            return False
-
-        self._running = False
-        if self._thread is not None:
-            self._thread.join(timeout=1.0)
-            self._thread = None
-        return True
-
-    @property
-    def is_active(self) -> bool:
-        """Checks if the click loop is currently running.
-
-        Returns:
-            bool: Current execution state.
-        """
-        return self._running
+def validate_coordinates(coords):
+    """Check if click coordinates are valid integers."""
+    if not isinstance(coords, dict):
+        return False
+    return all(isinstance(coords.get(k), int) for k in ('x', 'y'))
