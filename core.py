@@ -1,38 +1,34 @@
-import pyautogui
 import time
-import logging
+import pyautogui
+from threading import Event
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('automation-tool-12')
+class AutoClicker:
+    """Core engine for automating mouse click sequences."""
+    def __init__(self, interval=0.1, stop_event=None):
+        self.interval = interval
+        self.stop_event = stop_event or Event()
 
-def perform_click(x: int, y: int, interval: float = 0.1):
-    """Executes a safe click operation with boundary checks."""
-    try:
-        screen_width, screen_height = pyautogui.size()
-        
-        if not (0 <= x <= screen_width and 0 <= y <= screen_height):
-            logger.error(f"coordinates ({x}, {y}) out of screen bounds")
-            return False
-            
-        if interval < 0:
-            logger.warning("negative interval provided, resetting to default")
-            interval = 0.1
+    def run(self):
+        """Executes clicks until stop signal is received."""
+        try:
+            while not self.stop_event.is_set():
+                pyautogui.click()
+                time.sleep(self.interval)
+        except pyautogui.FailSafeException:
+            print("Safety trigger activated, stopping clicker.")
 
-        pyautogui.click(x, y)
-        time.sleep(interval)
-        return True
-        
-    except pyautogui.FailSafeException:
-        logger.critical("failsafe triggered, aborting operation")
-        return False
-    except Exception as e:
-        logger.error(f"unexpected execution error: {e}")
-        return False
+def initialize_session(config):
+    """Factory method to prepare clicker instance."""
+    stop_signal = Event()
+    engine = AutoClicker(
+        interval=config.get('delay', 0.5),
+        stop_event=stop_signal
+    )
+    return engine, stop_signal
 
-def run_automation(coords: list, duration: float):
-    """Iterates through click tasks with error handling."""
-    for x, y in coords:
-        success = perform_click(x, y, duration)
-        if not success:
-            logger.info("skipping coordinate due to error")
-            continue
+if __name__ == "__main__":
+    # Demo execution block
+    clicker, signal = initialize_session({'delay': 1.0})
+    print("Starting automation in 3 seconds...")
+    time.sleep(3)
+    clicker.run()
