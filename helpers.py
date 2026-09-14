@@ -1,33 +1,33 @@
-import time
-import pyautogui
 import random
+from typing import Tuple
 
-def click_at_position(x, y, interval=0.1):
-    """Perform a mouse click at specific coordinates."""
-    pyautogui.click(x, y)
-    time.sleep(interval)
 
-def random_jitter(x, y, radius=5):
-    """Apply minor randomness to coordinates for human-like behavior."""
-    new_x = x + random.randint(-radius, radius)
-    new_y = y + random.randint(-radius, radius)
-    return new_x, new_y
+def apply_jitter(coords: Tuple[int, int], radius: int = 3) -> Tuple[int, int]:
+    """Apply a small random offset to coordinates to simulate human clicks."""
+    x, y = coords
+    offset_x = random.randint(-radius, radius)
+    offset_y = random.randint(-radius, radius)
+    return (max(0, x + offset_x), max(0, y + offset_y))
 
-def safe_exit_check(key='q'):
-    """Check for emergency stop trigger."""
-    import keyboard
-    return keyboard.is_pressed(key)
 
-def wait_random_delay(min_sec=0.5, max_sec=2.0):
-    """Pause execution for a random duration to mimic user."""
-    time.sleep(random.uniform(min_sec, max_sec))
+def calculate_delay(base_cps: float, variance: float = 0.1) -> float:
+    """Calculate sleep delay in seconds based on clicks per second and variance."""
+    if base_cps <= 0:
+        return 0.1
+    interval = 1.0 / base_cps
+    jitter = random.uniform(-variance, variance) * interval
+    return max(0.001, interval + jitter)
 
-def get_screen_center():
-    """Retrieve coordinates for the center of the display."""
-    width, height = pyautogui.size()
-    return width // 2, height // 2
 
-def perform_drag(start_x, start_y, end_x, end_y, duration=0.5):
-    """Execute a drag operation between two points."""
-    pyautogui.moveTo(start_x, start_y)
-    pyautogui.dragTo(end_x, end_y, duration=duration, button='left')
+def is_within_bounds(coords: Tuple[int, int], screen_size: Tuple[int, int]) -> bool:
+    """Check if the given coordinates fall within the specified screen bounds."""
+    x, y = coords
+    width, height = screen_size
+    return 0 <= x < width and 0 <= y < height
+
+
+def format_duration(seconds: float) -> str:
+    """Format total seconds into a readable HH:MM:SS string."""
+    mins, secs = divmod(int(seconds), 60)
+    hours, mins = divmod(mins, 60)
+    return f"{hours:02d}:{mins:02d}:{secs:02d}"
