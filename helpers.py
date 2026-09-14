@@ -1,26 +1,33 @@
 import time
-import logging
-from typing import Tuple
+import pyautogui
+import random
 
-# Configure basic logging for automation events
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('automation-tool-12')
+def click_at_position(x, y, interval=0.1):
+    """Perform a mouse click at specific coordinates."""
+    pyautogui.click(x, y)
+    time.sleep(interval)
 
-def validate_coordinates(x: int, y: int, screen_size: Tuple[int, int]) -> bool:
-    """Ensures click targets remain within display boundaries."""
-    width, height = screen_size
-    return 0 <= x <= width and 0 <= y <= height
+def random_jitter(x, y, radius=5):
+    """Apply minor randomness to coordinates for human-like behavior."""
+    new_x = x + random.randint(-radius, radius)
+    new_y = y + random.randint(-radius, radius)
+    return new_x, new_y
 
-def sleep_interval(duration: float):
-    """Standardized sleep wrapper for anti-detection timing."""
-    if duration > 0:
-        time.sleep(duration)
+def safe_exit_check(key='q'):
+    """Check for emergency stop trigger."""
+    import keyboard
+    return keyboard.is_pressed(key)
 
-def format_log_entry(action: str, x: int, y: int) -> str:
-    """Generates consistent log strings for click history."""
-    return f"Action: {action} at position ({x}, {y})"
+def wait_random_delay(min_sec=0.5, max_sec=2.0):
+    """Pause execution for a random duration to mimic user."""
+    time.sleep(random.uniform(min_sec, max_sec))
 
-def calculate_jitter(base_val: int, intensity: int = 5) -> int:
-    """Adds randomization to mouse positioning to simulate human input."""
-    import random
-    return base_val + random.randint(-intensity, intensity)
+def get_screen_center():
+    """Retrieve coordinates for the center of the display."""
+    width, height = pyautogui.size()
+    return width // 2, height // 2
+
+def perform_drag(start_x, start_y, end_x, end_y, duration=0.5):
+    """Execute a drag operation between two points."""
+    pyautogui.moveTo(start_x, start_y)
+    pyautogui.dragTo(end_x, end_y, duration=duration, button='left')
