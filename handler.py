@@ -1,31 +1,35 @@
-import json
-import os
+import time
+import pyautogui
+from functools import lru_cache
 
-def save_click_profile(profile_name, data):
-    """Persist autoclicker configuration to local json file."""
-    file_path = f"profiles/{profile_name}.json"
-    os.makedirs("profiles", exist_ok=True)
-    try:
-        with open(file_path, 'w') as f:
-            json.dump(data, f, indent=4)
-        return True
-    except (IOError, TypeError) as e:
-        print(f"Storage error: {e}")
-        return False
+class ClickHandler:
+    """Handles high-frequency click execution with performance optimizations."""
 
-def load_click_profile(profile_name):
-    """Load existing click pattern from storage."""
-    file_path = f"profiles/{profile_name}.json"
-    if not os.path.exists(file_path):
-        return None
-    try:
-        with open(file_path, 'r') as f:
-            return json.load(f)
-    except json.JSONDecodeError:
-        return None
+    def __init__(self, interval=0.01):
+        self.interval = interval
+        # Disable fail-safe if performance is critical, otherwise keep default
+        pyautogui.FAILSAFE = True
 
-def validate_coordinates(coords):
-    """Check if click coordinates are valid integers."""
-    if not isinstance(coords, dict):
-        return False
-    return all(isinstance(coords.get(k), int) for k in ('x', 'y'))
+    @lru_cache(maxsize=128)
+    def _get_safe_coords(self, x: int, y: int) -> tuple:
+        """Cached coordinate normalization to reduce math overhead."""
+        return (int(x), int(y))
+
+    def execute_click(self, x: int, y: int):
+        """Performs a click using optimized coordinates."""
+        coords = self._get_safe_coords(x, y)
+        pyautogui.click(x=coords[0], y=coords[1])
+
+    def run_sequence(self, coordinates: list):
+        """Optimized batch processing for click sequences."""
+        # Local variable caching for tight loops
+        click = pyautogui.click
+        sleep = time.sleep
+        
+        for x, y in coordinates:
+            click(x=x, y=y)
+            if self.interval > 0:
+                sleep(self.interval)
+
+# Instance for global access within the tool
+click_handler = ClickHandler()
