@@ -2,36 +2,34 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 
-LOG_DIR = "logs"
-LOG_FILE = os.path.join(LOG_DIR, "automation.log")
-MAX_BYTES = 5 * 1024 * 1024
-BACKUP_COUNT = 3
-
-def setup_logger(name: str) -> logging.Logger:
+def setup_logger(name='automation-tool-12', log_file='app.log', level=logging.INFO):
     """Configures a rotating file logger for the application."""
-    if not os.path.exists(LOG_DIR):
-        os.makedirs(LOG_DIR)
-
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(level)
 
-    # Prevent duplicate handlers if setup is called multiple times
+    # Ensure logs directory exists
+    log_dir = os.path.dirname(log_file)
+    if log_dir and not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    # Setup rotation: 5MB per file, keep 3 backups
+    handler = RotatingFileHandler(
+        log_file, 
+        maxBytes=5 * 1024 * 1024, 
+        backupCount=3
+    )
+
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    handler.setFormatter(formatter)
+
+    # Prevent duplicate handlers if re-initialized
     if not logger.handlers:
-        handler = RotatingFileHandler(
-            LOG_FILE, 
-            maxBytes=MAX_BYTES, 
-            backup_count=BACKUP_COUNT
-        )
-        
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-        handler.setFormatter(formatter)
         logger.addHandler(handler)
-
-        # Add console output for development visibility
-        console = logging.StreamHandler()
-        console.setFormatter(formatter)
-        logger.addHandler(console)
+        logger.addHandler(logging.StreamHandler())
 
     return logger
+
+# Initialize global logger instance
+app_logger = setup_logger()
