@@ -1,24 +1,42 @@
-import time
 import random
-from typing import Tuple
+import time
+from typing import Tuple, Optional
 
-def get_random_delay(min_ms: int, max_ms: int) -> float:
-    """Calculates a randomized delay in seconds."""
-    return random.uniform(min_ms, max_ms) / 1000.0
 
-def validate_coordinates(x: int, y: int, screen_size: Tuple[int, int]) -> bool:
-    """Checks if coordinates are within screen boundaries."""
-    width, height = screen_size
-    return 0 <= x <= width and 0 <= y <= height
+def calculate_jittered_coords(
+    x: int, y: int, jitter_px: int = 3, bounds: Optional[Tuple[int, int, int, int]] = None
+) -> Tuple[int, int]:
+    """Applies a small random offset to target coordinates to simulate human clicks."""
+    offset_x = random.randint(-jitter_px, jitter_px)
+    offset_y = random.randint(-jitter_px, jitter_px)
+    new_x = x + offset_x
+    new_y = y + offset_y
 
-def format_runtime(seconds: float) -> str:
-    """Converts elapsed seconds into a readable string."""
-    hours, remainder = divmod(int(seconds), 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{hours:02}:{minutes:02}:{seconds:02}"
+    if bounds:
+        min_x, min_y, max_x, max_y = bounds
+        new_x = max(min_x, min(new_x, max_x))
+        new_y = max(min_y, min(new_y, max_y))
 
-def sleep_with_jitter(base_delay: float, jitter_percent: float = 0.1) -> None:
-    """Suspends execution for a duration with variance."""
-    variation = base_delay * jitter_percent
-    actual_delay = base_delay + random.uniform(-variation, variation)
-    time.sleep(max(0, actual_delay))
+    return new_x, new_y
+
+
+def get_randomized_delay(base_delay: float, variance_percent: float = 0.15) -> float:
+    """Calculates a randomized delay to avoid rigid, detectable click intervals."""
+    if base_delay <= 0:
+        return 0.0
+    variation = base_delay * variance_percent
+    return max(0.001, random.uniform(base_delay - variation, base_delay + variation))
+
+
+def parse_coordinate_string(coord_str: str) -> Tuple[int, int]:
+    """Parses a comma-separated string like '100, 200' into x, y tuple."""
+    parts = coord_str.split(",")
+    if len(parts) != 2:
+        raise ValueError("Coordinate string must be formatted as 'x, y'")
+    return int(parts[0].strip()), int(parts[1].strip())
+
+
+def sleep_with_jitter(base_seconds: float, variance_percent: float = 0.15) -> None:
+    """Pauses execution for a randomized duration based on base delay."""
+    delay = get_randomized_delay(base_seconds, variance_percent)
+    time.sleep(delay)
