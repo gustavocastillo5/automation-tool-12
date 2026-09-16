@@ -1,31 +1,35 @@
+from typing import Dict, Any, Optional
+import json
 import os
 
-# Configuration settings for automation-tool-12
+class ConfigManager:
+    """Handles loading and saving of autoclicker configuration parameters."""
 
-class AppConfig:
-    # Core execution settings
-    DEFAULT_INTERVAL = 0.1
-    MAX_CLICK_LIMIT = 1000
-    
-    # Logging configuration
-    LOG_FILE = "automation.log"
-    LOG_LEVEL = "INFO"
-
-    # Path management for internal assets
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DATA_PATH = os.path.join(BASE_DIR, "data")
-
-    @classmethod
-    def get_settings(cls):
-        """Returns a dictionary of all configurable parameters."""
-        return {
-            "interval": cls.DEFAULT_INTERVAL,
-            "max_limit": cls.MAX_CLICK_LIMIT,
-            "log_level": cls.LOG_LEVEL
+    def __init__(self, filepath: str = "settings.json") -> None:
+        self.filepath: str = filepath
+        self.settings: Dict[str, Any] = {
+            "interval": 0.1,
+            "button": "left",
+            "hotkey": "f6",
+            "repeat": 0
         }
 
-def validate_config(config_dict):
-    """Ensures basic constraints on application settings."""
-    if config_dict.get("interval", 0) < 0:
-        raise ValueError("Interval cannot be negative")
-    return True
+    def load_config(self) -> None:
+        """Reads configuration from a JSON file if it exists."""
+        if os.path.exists(self.filepath):
+            with open(self.filepath, "r") as file:
+                self.settings.update(json.load(file))
+
+    def save_config(self) -> None:
+        """Persists current settings to the disk."""
+        with open(self.filepath, "w") as file:
+            json.dump(self.settings, file, indent=4)
+
+    def get_setting(self, key: str, default: Optional[Any] = None) -> Any:
+        """Retrieves a specific setting value with an optional fallback."""
+        return self.settings.get(key, default)
+
+    def update_setting(self, key: str, value: Any) -> None:
+        """Updates a setting key and saves the changes."""
+        self.settings[key] = value
+        self.save_config()
