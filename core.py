@@ -1,34 +1,37 @@
-import time
 import pyautogui
-from threading import Event
+import time
+import threading
 
 class AutoClicker:
-    """Core engine for automating mouse click sequences."""
-    def __init__(self, interval=0.1, stop_event=None):
+    """Handles click automation cycles"""
+    def __init__(self, interval=0.1):
         self.interval = interval
-        self.stop_event = stop_event or Event()
+        self.running = False
 
-    def run(self):
-        """Executes clicks until stop signal is received."""
-        try:
-            while not self.stop_event.is_set():
-                pyautogui.click()
-                time.sleep(self.interval)
-        except pyautogui.FailSafeException:
-            print("Safety trigger activated, stopping clicker.")
+    def start_clicking(self):
+        """Executes primary click loop"""
+        self.running = True
+        while self.running:
+            pyautogui.click()
+            time.sleep(self.interval)
 
-def initialize_session(config):
-    """Factory method to prepare clicker instance."""
-    stop_signal = Event()
-    engine = AutoClicker(
-        interval=config.get('delay', 0.5),
-        stop_event=stop_signal
-    )
-    return engine, stop_signal
+    def stop_clicking(self):
+        """Terminates execution"""
+        self.running = False
 
-if __name__ == "__main__":
-    # Demo execution block
-    clicker, signal = initialize_session({'delay': 1.0})
-    print("Starting automation in 3 seconds...")
-    time.sleep(3)
-    clicker.run()
+    def run_in_thread(self):
+        """Spawns worker thread"""
+        thread = threading.Thread(target=self.start_clicking)
+        thread.daemon = True
+        thread.start()
+
+if __name__ == '__main__':
+    clicker = AutoClicker(interval=0.5)
+    print('Starting automation. Press Ctrl+C to stop.')
+    try:
+        clicker.run_in_thread()
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        clicker.stop_clicking()
+        print('Automation stopped.')
