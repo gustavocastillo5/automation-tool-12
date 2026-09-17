@@ -1,17 +1,18 @@
 # automation-tool-12
 
-`automation-tool-12` is a high-performance Python-based autoclicker designed for task automation and repetitive interface interaction. It utilizes low-level input hooks to ensure minimal latency and reliable operation across cross-platform environments.
+`automation-tool-12` is a high-performance Python-based autoclicker designed for task automation and rapid input simulation. It utilizes low-level system hooks to provide reliable, low-latency clicking across all desktop applications.
+
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 ## Features
-
-*   **Adaptive Click Intervals:** Support for fixed, randomized, and Gaussian-distributed timing intervals to emulate human behavior.
-*   **Precision Targeting:** Coordinate-based clicking with optional pixel-color validation to ensure triggers only fire on specific UI elements.
-*   **Hotkey Control:** Global listeners for instant start/stop toggling, allowing seamless control during active work sessions.
-*   **Headless Operation:** Low resource footprint engine optimized for background execution and automation scripts.
+*   **Dynamic Intervals:** Supports millisecond-precision timing between clicks to mimic human behavior or maximize throughput.
+*   **Coordinate Targeting:** Trigger clicks at fixed screen coordinates or follow your current cursor position dynamically.
+*   **Hotkey Control:** Start and stop automation instantly using customizable global keyboard shortcuts.
+*   **Multi-Button Support:** Toggle between left, right, and middle mouse button emulation via simple configuration.
 
 ## Installation
 
-Ensure you have Python 3.8+ installed. Clone the repository and install the required dependencies:
+Ensure you have [Python 3.8+](https://www.python.org/) installed, then clone the repository and install the dependencies:
 
 ```bash
 git clone https://github.com/Developer/automation-tool-12.git
@@ -21,29 +22,25 @@ pip install -r requirements.txt
 
 ## Usage
 
-You can initialize a basic clicker instance by defining the target coordinates and frequency.
-
-```python
-from automator import AutoClicker
-
-# Initialize at x=500, y=500 with a 0.5s delay
-clicker = AutoClicker(x=500, y=500, interval=0.5)
-
-# Start the click loop
-clicker.start()
-
-# Stop loop after 10 seconds
-clicker.stop_after(10)
-```
-
-For advanced configuration, including pixel-checking logic, refer to the `examples/` directory or run the CLI tool directly:
+To start the autoclicker with default settings (Left Click, 100ms interval), run:
 
 ```bash
-python main.py --x 500 --y 500 --interval 0.1 --duration 60
+python main.py --interval 0.1 --button left
 ```
 
+### Configuration
+You can define custom click sequences or specific target zones by modifying the `config.json` file:
+
+```json
+{
+  "interval": 0.05,
+  "button": "left",
+  "toggle_key": "f8",
+  "coordinates": [500, 500]
+}
+```
+
+Once running, press your configured **toggle_key** (default: `F8`) to begin clicking. Press it again to terminate the automation process.
+
 ## License
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
 Distributed under the MIT License. See `LICENSE` for more information.
