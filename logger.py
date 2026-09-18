@@ -1,47 +1,37 @@
-import os
 import logging
+import os
 from logging.handlers import RotatingFileHandler
 
-def setup_logger(log_filename="autoclicker.log", max_bytes=5242880, backup_count=3):
-    """
-    Sets up a rotating file logger and a console logger for the autoclicker.
-    """
-    logger = logging.getLogger("autoclicker")
-    logger.setLevel(logging.DEBUG)
+def setup_logger(name='automation-tool-12', log_file='app.log', level=logging.INFO):
+    """Configures a rotating file logger for the application."""
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
 
-    # Clear existing handlers to avoid duplicate log entries
-    if logger.hasHandlers():
-        logger.handlers.clear()
-
-    # Formatters for consistent log structure
-    log_format = logging.Formatter(
-        fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
-    )
-
-    # Console handler for real-time CLI feedback during operations
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(log_format)
-    logger.addHandler(console_handler)
-
-    # Extract directory path and create if necessary
-    log_dir = os.path.dirname(log_filename)
+    # Ensure logs directory exists
+    log_dir = os.path.dirname(log_file)
     if log_dir and not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    # Rotating file handler to manage disk space for persistent session logs
-    try:
-        file_handler = RotatingFileHandler(
-            log_filename,
-            maxBytes=max_bytes,
-            backupCount=backup_count,
-            encoding="utf-8"
-        )
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(log_format)
-        logger.addHandler(file_handler)
-    except (OSError, PermissionError) as e:
-        console_handler.warning(f"Could not initialize file logging: {e}. Falling back to console.")
+    # Setup rotation: 5MB per file, keep 3 backup files
+    handler = RotatingFileHandler(
+        log_file, 
+        maxBytes=5*1024*1024, 
+        backupCount=3
+    )
+    
+    # Define message format
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    handler.setFormatter(formatter)
+    
+    # Avoid adding multiple handlers if setup is called twice
+    if not logger.handlers:
+        logger.addHandler(handler)
+        
+    # Console output for debugging
+    console = logging.StreamHandler()
+    console.setFormatter(formatter)
+    logger.addHandler(console)
 
     return logger
