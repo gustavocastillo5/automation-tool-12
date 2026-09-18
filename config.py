@@ -1,35 +1,34 @@
-from typing import Dict, Any, Optional
 import json
 import os
+from typing import Dict, Any
 
-class ConfigManager:
-    """Handles loading and saving of autoclicker configuration parameters."""
+DEFAULT_CONFIG = {
+    "interval": 0.1,
+    "button": "left",
+    "repeat": -1,
+    "hotkey": "f6"
+}
 
-    def __init__(self, filepath: str = "settings.json") -> None:
-        self.filepath: str = filepath
-        self.settings: Dict[str, Any] = {
-            "interval": 0.1,
-            "button": "left",
-            "hotkey": "f6",
-            "repeat": 0
-        }
+def load_config(filepath: str = "config.json") -> Dict[str, Any]:
+    """
+    Loads configuration from JSON file or returns defaults.
+    """
+    if not os.path.exists(filepath):
+        return DEFAULT_CONFIG.copy()
 
-    def load_config(self) -> None:
-        """Reads configuration from a JSON file if it exists."""
-        if os.path.exists(self.filepath):
-            with open(self.filepath, "r") as file:
-                self.settings.update(json.load(file))
+    try:
+        with open(filepath, "r") as f:
+            data = json.load(f)
+            # Merge loaded data with defaults to ensure all keys exist
+            config = DEFAULT_CONFIG.copy()
+            config.update(data)
+            return config
+    except (json.JSONDecodeError, IOError):
+        return DEFAULT_CONFIG.copy()
 
-    def save_config(self) -> None:
-        """Persists current settings to the disk."""
-        with open(self.filepath, "w") as file:
-            json.dump(self.settings, file, indent=4)
-
-    def get_setting(self, key: str, default: Optional[Any] = None) -> Any:
-        """Retrieves a specific setting value with an optional fallback."""
-        return self.settings.get(key, default)
-
-    def update_setting(self, key: str, value: Any) -> None:
-        """Updates a setting key and saves the changes."""
-        self.settings[key] = value
-        self.save_config()
+def save_config(config: Dict[str, Any], filepath: str = "config.json") -> None:
+    """
+    Persists configuration to disk.
+    """
+    with open(filepath, "w") as f:
+        json.dump(config, f, indent=4)
