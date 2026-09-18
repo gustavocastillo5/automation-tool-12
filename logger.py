@@ -1,34 +1,47 @@
-import logging
 import os
+import logging
 from logging.handlers import RotatingFileHandler
 
-def setup_logger(name: str = "automation-tool-12", log_file: str = "app.log"):
-    """Configures a rotating file logger for the application."""
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+def setup_logger(log_filename="autoclicker.log", max_bytes=5242880, backup_count=3):
+    """
+    Sets up a rotating file logger and a console logger for the autoclicker.
+    """
+    logger = logging.getLogger("autoclicker")
+    logger.setLevel(logging.DEBUG)
 
-    # Prevent duplicate handlers if function is called multiple times
-    if not logger.handlers:
-        # Rotating file handler: 5MB max per file, keep 3 backups
-        handler = RotatingFileHandler(
-            log_file, 
-            maxBytes=5 * 1024 * 1024, 
-            backupCount=3
+    # Clear existing handlers to avoid duplicate log entries
+    if logger.hasHandlers():
+        logger.handlers.clear()
+
+    # Formatters for consistent log structure
+    log_format = logging.Formatter(
+        fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+
+    # Console handler for real-time CLI feedback during operations
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(log_format)
+    logger.addHandler(console_handler)
+
+    # Extract directory path and create if necessary
+    log_dir = os.path.dirname(log_filename)
+    if log_dir and not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    # Rotating file handler to manage disk space for persistent session logs
+    try:
+        file_handler = RotatingFileHandler(
+            log_filename,
+            maxBytes=max_bytes,
+            backupCount=backup_count,
+            encoding="utf-8"
         )
-        
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-        handler.setFormatter(formatter)
-        
-        # Add console output for development visibility
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        
-        logger.addHandler(handler)
-        logger.addHandler(console_handler)
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(log_format)
+        logger.addHandler(file_handler)
+    except (OSError, PermissionError) as e:
+        console_handler.warning(f"Could not initialize file logging: {e}. Falling back to console.")
 
     return logger
-
-# Instantiate default logger for global use
-logger = setup_logger()
