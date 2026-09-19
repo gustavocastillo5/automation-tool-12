@@ -1,31 +1,23 @@
 import time
-import threading
-from functools import lru_cache
+import logging
+from typing import Tuple
 
-@lru_cache(maxsize=128)
-def get_normalized_coordinates(x: int, y: int, screen_width: int, screen_height: int) -> tuple:
-    """Calculates coordinate percentages to support various display resolutions."""
-    return (x / screen_width, y / screen_height)
+# Logging configuration for automation-tool-12
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('automation-tool-12')
 
-class ClickOptimizer:
-    """Buffer-based event handling to reduce CPU overhead during rapid clicks."""
-    def __init__(self, interval: float = 0.01):
-        self.interval = interval
-        self._last_call = 0.0
-        self._lock = threading.Lock()
+def validate_coordinates(x: int, y: int, screen_size: Tuple[int, int]) -> bool:
+    """Ensure mouse coordinates are within physical screen bounds."""
+    width, height = screen_size
+    return 0 <= x < width and 0 <= y < height
 
-    def is_throttled(self) -> bool:
-        """Prevents system event flooding by enforcing minimum click delay."""
-        with self._lock:
-            current_time = time.perf_counter()
-            if current_time - self._last_call < self.interval:
-                return True
-            self._last_call = current_time
-            return False
+def sleep_jitter(base_seconds: float, jitter: float = 0.1) -> None:
+    """Add random variance to timing to mimic human input patterns."""
+    import random
+    actual_sleep = base_seconds + random.uniform(-jitter, jitter)
+    time.sleep(max(0, actual_sleep))
 
-def batch_process_coordinates(coords: list, scale_x: int, scale_y: int) -> list:
-    """Vectorized coordinate scaling for performance optimization."""
-    return [
-        (int(x * scale_x), int(y * scale_y)) 
-        for x, y in coords
-    ]
+def format_execution_time(start_time: float) -> str:
+    """Calculate elapsed time since start of automation sequence."""
+    elapsed = time.time() - start_time
+    return f"{elapsed:.2f} seconds"
