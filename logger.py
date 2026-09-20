@@ -1,37 +1,50 @@
 import logging
-from logging.handlers import RotatingFileHandler
 import os
+from logging.handlers import RotatingFileHandler
 
-def setup_logger(name: str = "autoclicker", log_file: str = "automation.log") -> logging.Logger:
-    """
-    Configures a rotating file logger for the automation tool.
-    """
+def setup_logger(
+    name: str = "autoclicker",
+    log_file: str = "autoclicker.log",
+    level: int = logging.INFO,
+    max_bytes: int = 5 * 1024 * 1024,
+    backup_count: int = 3
+) -> logging.Logger:
+    """Sets up a rotating file logger and a console logger."""
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(level)
 
-    # Prevent duplicate handlers if setup is called multiple times
-    if logger.hasHandlers():
-        logger.handlers.clear()
+    # Prevent duplicate handlers if already configured
+    if logger.handlers:
+        return logger
 
-    # Format logs with timestamps and levels
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # Ensure directory structure for logs exists
+    log_dir = os.path.dirname(log_file)
+    if log_dir and not os.path.exists(log_dir):
+        os.makedirs(log_dir)
 
-    # File rotation: 5MB per file, keep 3 backup files
-    file_handler = RotatingFileHandler(
-        log_file, 
-        maxBytes=5 * 1024 * 1024, 
-        backupCount=3
+    formatter = logging.Formatter(
+        "[%(asctime)s] [%(levelname)s] [%(name)s] - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
     )
-    file_handler.setFormatter(formatter)
 
-    # Console output for visibility during development
+    # Setup console output handler
     console_handler = logging.StreamHandler()
+    console_handler.setLevel(level)
     console_handler.setFormatter(formatter)
-
-    logger.addHandler(file_handler)
     logger.addHandler(console_handler)
 
-    return logger
+    # Setup rotating file handler for disk storage
+    try:
+        file_handler = RotatingFileHandler(
+            log_file,
+            maxBytes=max_bytes,
+            backupCount=backup_count,
+            encoding="utf-8"
+        )
+        file_handler.setLevel(level)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+    except IOError as e:
+        logger.warning(f"Failed to initialize file logging: {e}. Console logging only.")
 
-# Instantiate shared logger
-automation_logger = setup_logger()
+    return logger
