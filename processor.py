@@ -1,41 +1,45 @@
+import logging
+import pyautogui
 import time
-import threading
-from queue import Queue
 
-class EventProcessor:
-    """High-performance click event batch processor."""
-    def __init__(self):
-        self.queue = Queue()
-        self.running = True
+# Configure logger for automation monitoring
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('automation-tool-12')
 
-    def process_events(self):
-        """Consumes events from queue using batching to reduce CPU context switching."""
-        while self.running:
-            batch = []
-            # Wait for first event to prevent busy-waiting
-            batch.append(self.queue.get())
-            
-            # Collect additional pending events to process in one pass
-            while not self.queue.empty() and len(batch) < 100:
-                batch.append(self.queue.get())
-            
-            self._execute_batch(batch)
+def perform_click(x, y, interval=0.1):
+    """Executes a safe click operation with boundary validation."""
+    try:
+        screen_width, screen_height = pyautogui.size()
 
-    def _execute_batch(self, events):
-        """Internal batch execution optimized for low latency."""
-        for event in events:
-            try:
-                # Simulation of low-level click injection
-                x, y = event
-                # Minimal overhead per operation
-                pass
-            except Exception as e:
-                print(f"Event execution error: {e}")
+        # Validate coordinates against monitor resolution
+        if not (0 <= x <= screen_width and 0 <= y <= screen_height):
+            logger.error(f"Coordinate out of bounds: ({x}, {y})")
+            raise ValueError("Click coordinates exceed screen resolution.")
 
-    def push_event(self, x, y):
-        """Thread-safe event insertion."""
-        self.queue.put((x, y))
+        # Ensure non-negative timing interval
+        if interval < 0:
+            interval = 0.1
 
-    def shutdown(self):
-        """Graceful cleanup of processing thread."""
-        self.running = False
+        pyautogui.moveTo(x, y)
+        pyautogui.click()
+        time.sleep(interval)
+        
+    except pyautogui.FailSafeException:
+        logger.critical("Fail-safe triggered by user. Exiting.")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error during click: {e}")
+        return False
+    
+    return True
+
+def execute_macro(actions):
+    """Iterates through a list of click definitions."""
+    for action in actions:
+        try:
+            success = perform_click(action.get('x', 0), action.get('y', 0))
+            if not success:
+                break
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Skipping invalid action {action}: {e}")
+            continue
