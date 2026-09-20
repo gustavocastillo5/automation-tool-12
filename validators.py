@@ -1,25 +1,25 @@
-import re
+from typing import Union, Tuple
 
-def validate_coordinate(x: int, y: int, screen_width: int, screen_height: int) -> bool:
-    """Checks if coordinates are within screen boundaries."""
-    return 0 <= x < screen_width and 0 <= y < screen_height
+def validate_coordinates(x: int, y: int) -> bool:
+    """Verify that click coordinates are within non-negative bounds."""
+    return isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0
 
 def validate_interval(interval: float) -> bool:
-    """Ensures click interval is within safe operational limits."""
-    return 0.01 <= interval <= 60.0
+    """Check if the click interval is a positive non-zero value."""
+    return isinstance(interval, (int, float)) and interval > 0
 
-def validate_key_string(key: str) -> bool:
-    """Validates that a key input string is non-empty and simple."""
-    return bool(re.match(r'^[a-zA-Z0-9]+$', key))
+def validate_button(button: str) -> bool:
+    """Ensure the input button identifier is valid for mouse events."""
+    valid_buttons: Tuple[str, ...] = ("left", "right", "middle")
+    return button.lower() in valid_buttons
 
-def validate_click_count(count: int) -> bool:
-    """Checks for positive click iteration counts."""
-    return count > 0 or count == -1
-
-def sanitize_config(data: dict) -> dict:
-    """Filters out invalid entries from configuration dictionary."""
-    sanitized = {}
-    for key, value in data.items():
-        if value is not None:
-            sanitized[key] = value
-    return sanitized
+def format_click_data(x: int, y: int, interval: float) -> dict:
+    """Structure validated click parameters into a dictionary object."""
+    if not all([validate_coordinates(x, y), validate_interval(interval)]):
+        raise ValueError("Invalid click parameters provided")
+    
+    return {
+        "position": (x, y),
+        "interval": float(interval),
+        "status": "ready"
+    }
