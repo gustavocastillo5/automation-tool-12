@@ -1,36 +1,43 @@
 import logging
-from logging.handlers import RotatingFileHandler
 import os
+from logging.handlers import RotatingFileHandler
 
-def setup_logger(name='automation-tool-12', log_file='app.log', level=logging.INFO):
-    """Initializes a rotating file logger for the application."""
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
+def setup_logger(log_file="autoclicker.log", max_bytes=1048576, backup_count=5):
+    """
+    Configures and returns a rotating logger for the autoclicker application.
+    """
+    logger = logging.getLogger("autoclicker")
+    logger.setLevel(logging.DEBUG)
 
-    # Prevent duplicate handlers if function is called multiple times
-    if not logger.handlers:
-        # Ensure logs directory exists
-        os.makedirs('logs', exist_ok=True)
-        log_path = os.path.join('logs', log_file)
+    # Avoid adding duplicate handlers if logger is already configured
+    if logger.handlers:
+        return logger
 
-        # Create rotating handler: 5MB per file, keep 3 backup files
-        handler = RotatingFileHandler(
-            log_path, 
-            maxBytes=5 * 1024 * 1024, 
-            backupCount=3
-        )
-        
-        # Formatting
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-        handler.setFormatter(formatter)
-        
-        logger.addHandler(handler)
-        
-        # Also output to console for real-time monitoring
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
+    # Create log directory if it does not exist
+    log_dir = os.path.dirname(log_file)
+    if log_dir and not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    formatter = logging.Formatter(
+        "[%(asctime)s] %(levelname)s [%(name)s:%(filename)s:%(lineno)d] - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+
+    # File Handler with rotation
+    file_handler = RotatingFileHandler(
+        log_file, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
+    )
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    # Console Handler for real-time terminal feedback
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
 
     return logger
+
+# Default logger instance ready for import across modules
+log = setup_logger()
