@@ -1,50 +1,36 @@
 import logging
-import os
 from logging.handlers import RotatingFileHandler
+import os
 
-def setup_logger(
-    name: str = "autoclicker",
-    log_file: str = "autoclicker.log",
-    level: int = logging.INFO,
-    max_bytes: int = 5 * 1024 * 1024,
-    backup_count: int = 3
-) -> logging.Logger:
-    """Sets up a rotating file logger and a console logger."""
+def setup_logger(name='automation-tool-12', log_file='app.log', level=logging.INFO):
+    """Initializes a rotating file logger for the application."""
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
-    # Prevent duplicate handlers if already configured
-    if logger.handlers:
-        return logger
+    # Prevent duplicate handlers if function is called multiple times
+    if not logger.handlers:
+        # Ensure logs directory exists
+        os.makedirs('logs', exist_ok=True)
+        log_path = os.path.join('logs', log_file)
 
-    # Ensure directory structure for logs exists
-    log_dir = os.path.dirname(log_file)
-    if log_dir and not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-
-    formatter = logging.Formatter(
-        "[%(asctime)s] [%(levelname)s] [%(name)s] - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
-    )
-
-    # Setup console output handler
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(level)
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-
-    # Setup rotating file handler for disk storage
-    try:
-        file_handler = RotatingFileHandler(
-            log_file,
-            maxBytes=max_bytes,
-            backupCount=backup_count,
-            encoding="utf-8"
+        # Create rotating handler: 5MB per file, keep 3 backup files
+        handler = RotatingFileHandler(
+            log_path, 
+            maxBytes=5 * 1024 * 1024, 
+            backupCount=3
         )
-        file_handler.setLevel(level)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-    except IOError as e:
-        logger.warning(f"Failed to initialize file logging: {e}. Console logging only.")
+        
+        # Formatting
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        handler.setFormatter(formatter)
+        
+        logger.addHandler(handler)
+        
+        # Also output to console for real-time monitoring
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
 
     return logger
