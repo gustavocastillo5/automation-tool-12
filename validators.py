@@ -1,25 +1,35 @@
-from typing import Union, Tuple
+import re
+from typing import Any, Optional
 
-def validate_coordinates(x: int, y: int) -> bool:
-    """Verify that click coordinates are within non-negative bounds."""
-    return isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0
+def validate_interval(interval: Any) -> float:
+    """Ensures click interval is a positive float."""
+    try:
+        value = float(interval)
+        if value < 0.001:
+            return 0.001
+        return value
+    except (ValueError, TypeError):
+        return 0.1
 
-def validate_interval(interval: float) -> bool:
-    """Check if the click interval is a positive non-zero value."""
-    return isinstance(interval, (int, float)) and interval > 0
+def validate_coordinates(x: Any, y: Any) -> tuple[int, int]:
+    """Sanitizes coordinate inputs to integer values."""
+    try:
+        return int(x), int(y)
+    except (ValueError, TypeError):
+        return 0, 0
 
-def validate_button(button: str) -> bool:
-    """Ensure the input button identifier is valid for mouse events."""
-    valid_buttons: Tuple[str, ...] = ("left", "right", "middle")
-    return button.lower() in valid_buttons
+def is_valid_hotkey(key: str) -> bool:
+    """Checks if provided key follows simple single-char format."""
+    pattern = r'^[a-z0-9]$'
+    return bool(re.match(pattern, str(key).lower()))
 
-def format_click_data(x: int, y: int, interval: float) -> dict:
-    """Structure validated click parameters into a dictionary object."""
-    if not all([validate_coordinates(x, y), validate_interval(interval)]):
-        raise ValueError("Invalid click parameters provided")
-    
+def sanitize_config_dict(config: dict) -> dict:
+    """Cleans dictionary values for core execution logic."""
     return {
-        "position": (x, y),
-        "interval": float(interval),
-        "status": "ready"
+        "interval": validate_interval(config.get("interval")),
+        "coords": validate_coordinates(
+            config.get("x", 0),
+            config.get("y", 0)
+        ),
+        "hotkey": config.get("hotkey", "f1")
     }
