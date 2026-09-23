@@ -1,43 +1,36 @@
 import json
-from pathlib import Path
-from typing import Any, Dict
+import os
 
-DEFAULT_CONFIG: Dict[str, Any] = {
-    "cps": 10.0,
-    "mouse_button": "left",
-    "hotkey": "f6",
-    "click_limit": 0,
-    "random_interval": False,
-    "interval_jitter": 0.02,
+DEFAULT_CONFIG = {
+    "interval": 0.1,
+    "button": "left",
+    "repeat": 0,
+    "hotkey": "f6"
 }
 
+CONFIG_FILE = "settings.json"
 
-def load_config(config_path: str = "config.json") -> Dict[str, Any]:
-    """Load configuration from JSON file, merging missing values with defaults."""
-    path = Path(config_path)
-    config = DEFAULT_CONFIG.copy()
-
-    if not path.exists():
-        save_config(config, config_path)
-        return config
+def load_config():
+    """load settings from file or return defaults"""
+    if not os.path.exists(CONFIG_FILE):
+        save_config(DEFAULT_CONFIG)
+        return DEFAULT_CONFIG
 
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(CONFIG_FILE, "r") as f:
             user_config = json.load(f)
-            if isinstance(user_config, dict):
-                config.update(user_config)
-    except (json.JSONDecodeError, OSError):
-        # Fallback to default configuration if file read fails
-        pass
+            # ensure all keys exist
+            return {**DEFAULT_CONFIG, **user_config}
+    except (json.JSONDecodeError, IOError):
+        return DEFAULT_CONFIG
 
-    return config
-
-
-def save_config(config: Dict[str, Any], config_path: str = "config.json") -> None:
-    """Save configuration dictionary to a JSON file."""
-    path = Path(config_path)
+def save_config(config_data):
+    """persist current settings to json"""
     try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(config, f, indent=4)
-    except OSError:
-        pass
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(config_data, f, indent=4)
+    except IOError as e:
+        print(f"failed to save config: {e}")
+
+# initialized state for the application
+active_config = load_config()
