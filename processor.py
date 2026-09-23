@@ -1,35 +1,38 @@
-import json
-import os
-from typing import Dict, Any, Optional
+import time
+import threading
+from queue import Queue
 
-class ClickDataProcessor:
-    """Handles persistence and validation for autoclicker settings."""
+class EventProcessor:
+    """Handles click event execution with background threading."""
+    def __init__(self, interval=0.01):
+        self.queue = Queue()
+        self.interval = interval
+        self.running = True
 
-    def __init__(self, storage_path: str = "config.json"):
-        self.storage_path = storage_path
+    def submit_event(self, x, y):
+        """Adds coordinates to the processing queue."""
+        self.queue.put((x, y))
 
-    def save_settings(self, settings: Dict[str, Any]) -> bool:
-        """Serializes click configuration to disk."""
-        try:
-            with open(self.storage_path, "w") as f:
-                json.dump(settings, f, indent=4)
-            return True
-        except (IOError, TypeError):
-            return False
+    def run_worker(self):
+        """Worker loop for low-latency click execution."""
+        while self.running:
+            if not self.queue.empty():
+                x, y = self.queue.get()
+                self._perform_click(x, y)
+                time.sleep(self.interval)
+            else:
+                time.sleep(0.001) # CPU usage reduction
 
-    def load_settings(self) -> Optional[Dict[str, Any]]:
-        """Reads and parses click settings from file."""
-        if not os.path.exists(self.storage_path):
-            return None
-            
-        try:
-            with open(self.storage_path, "r") as f:
-                return json.load(f)
-        except (json.JSONDecodeError, IOError):
-            return None
+    def _perform_click(self, x, y):
+        """Low-level event injection point."""
+        # Placeholder for platform-specific mouse interaction
+        pass
 
-    def validate_coords(self, data: Dict[str, Any]) -> bool:
-        """Ensures click coordinates are within logical bounds."""
-        x = data.get("x", 0)
-        y = data.get("y", 0)
-        return isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0
+    def stop(self):
+        """Graceful shutdown of worker threads."""
+        self.running = False
+
+if __name__ == "__main__":
+    processor = EventProcessor()
+    worker_thread = threading.Thread(target=processor.run_worker, daemon=True)
+    worker_thread.start()
