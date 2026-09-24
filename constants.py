@@ -1,34 +1,31 @@
-import os
+from typing import Final
 
-# Configuration constants for automation-tool-12
+# Configuration constants for the autoclicker engine
 
-DEFAULT_CONFIG_DIR = os.path.expanduser('~/.autoclicker')
-CONFIG_FILE = os.path.join(DEFAULT_CONFIG_DIR, 'settings.json')
+DEFAULT_INTERVAL: Final[float] = 0.1
+MAX_CLICK_RATE: Final[float] = 1000.0
+MIN_CLICK_RATE: Final[float] = 0.01
 
-# Timing constraints in milliseconds
-MIN_INTERVAL_MS = 10
-MAX_INTERVAL_MS = 60000
+# Input simulation constants
+MOUSE_BUTTON_LEFT: Final[str] = "left"
+MOUSE_BUTTON_RIGHT: Final[str] = "right"
 
-# Supported mouse buttons mapping
-MOUSE_BUTTONS = {
-    'left': 'left',
-    'right': 'right',
-    'middle': 'middle'
-}
+# UI and logging defaults
+WINDOW_TITLE: Final[str] = "automation-tool-12"
+LOG_FILE_PATH: Final[str] = "logs/autoclicker.log"
 
-# Logging levels and formats
-LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-LOG_FILE = 'automation.log'
-
-# Coordinate defaults for screen simulation
-DEFAULT_X = 0
-DEFAULT_Y = 0
-
-def get_app_defaults():
-    """Returns the default dictionary for tool configuration."""
+def get_default_settings() -> dict[str, float]:
+    """Returns a dictionary of default application settings."""
     return {
-        'interval': 100,
-        'button': MOUSE_BUTTONS['left'],
-        'repeat': True,
-        'max_clicks': 1000
+        "interval": DEFAULT_INTERVAL,
+        "max_rate": MAX_CLICK_RATE,
+        "min_rate": MIN_CLICK_RATE
     }
+
+# Coordinate system constants
+SCREEN_ORIGIN_X: Final[int] = 0
+SCREEN_ORIGIN_Y: Final[int] = 0
+
+# Exit codes
+EXIT_SUCCESS: Final[int] = 0
+EXIT_FAILURE: Final[int] = 1
