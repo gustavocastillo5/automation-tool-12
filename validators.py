@@ -1,35 +1,24 @@
-class ValidationError(Exception):
-    """Custom exception for input validation failures in automation-tool-12."""
-    pass
+from typing import Union, Tuple
 
-def validate_click_params(interval: float, iterations: int) -> None:
-    """
-    Validates user input for autoclicker configuration parameters.
-    Ensures timing and iteration counts are within safe operational bounds.
-    """
-    if not isinstance(interval, (int, float)) or interval < 0.01:
-        raise ValidationError(f"Invalid interval: {interval}. Minimum is 0.01 seconds.")
+def validate_coordinates(x: int, y: int) -> bool:
+    """Verify that click coordinates are non-negative integers."""
+    return isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0
+
+def validate_interval(interval: Union[int, float]) -> bool:
+    """Check if the click interval is a positive numeric value."""
+    return isinstance(interval, (int, float)) and interval > 0
+
+def validate_button(button: str) -> bool:
+    """Validate mouse button input string against allowed options."""
+    allowed = ('left', 'right', 'middle')
+    return button.lower() in allowed
+
+def sanitize_click_data(x: int, y: int, interval: float) -> Tuple[int, int, float]:
+    """Ensure input values meet system constraints before processing."""
+    if not validate_coordinates(x, y):
+        raise ValueError(f"Invalid coordinates: ({x}, {y})")
     
-    if not isinstance(iterations, int) or iterations < -1:
-        raise ValidationError(f"Invalid iteration count: {iterations}. Use -1 for infinite.")
-
-def validate_coordinate(x: int, y: int, screen_width: int, screen_height: int) -> None:
-    """
-    Validates screen coordinates against current resolution settings.
-    """
-    if not (0 <= x <= screen_width and 0 <= y <= screen_height):
-        raise ValidationError(f"Coordinates ({x}, {y}) out of screen bounds.")
-
-# Main loop integration helper
-def sanitize_input(data: dict) -> bool:
-    """
-    Orchestrates validation for incoming processing loop tasks.
-    """
-    try:
-        validate_click_params(data.get('interval', 0), data.get('iterations', 0))
-        validate_coordinate(data.get('x', 0), data.get('y', 0), 1920, 1080)
-        return True
-    except ValidationError as e:
-        # Log error in production scenario
-        print(f"Validation failed: {e}")
-        return False
+    if not validate_interval(interval):
+        raise ValueError(f"Invalid interval: {interval}")
+        
+    return int(x), int(y), float(interval)
