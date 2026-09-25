@@ -1,34 +1,28 @@
 import time
-import functools
 import logging
+import pyautogui
+from typing import Tuple
 
-# Setup basic logger for automation-tool-12
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('automation-tool-12')
 
-def retry(max_attempts=3, delay=2, backoff=2):
-    """Decorator for retrying network operations with exponential backoff."""
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            attempts = 0
-            current_delay = delay
-            while attempts < max_attempts:
-                try:
-                    return func(*args, **kwargs)
-                except (ConnectionError, TimeoutError) as e:
-                    attempts += 1
-                    if attempts >= max_attempts:
-                        logger.error(f'Operation failed after {max_attempts} attempts')
-                        raise e
-                    logger.warning(f'Attempt {attempts} failed, retrying in {current_delay}s...')
-                    time.sleep(current_delay)
-                    current_delay *= backoff
-            return None
-        return wrapper
-    return decorator
+def safe_click(x: int, y: int, interval: float = 0.1) -> None:
+    """Execute mouse click with safety delay."""
+    try:
+        pyautogui.click(x, y)
+        time.sleep(interval)
+    except pyautogui.FailSafeException:
+        logger.error("Fail-safe triggered: aborting click.")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error during click: {e}")
 
-@retry(max_attempts=3, delay=1)
-def perform_network_request(url):
-    """Example function to be decorated with retry logic."""
-    # Simulating a network request
-    return True
+def get_screen_center() -> Tuple[int, int]:
+    """Calculate center coordinates of primary display."""
+    width, height = pyautogui.size()
+    return width // 2, height // 2
+
+def validate_coordinates(x: int, y: int) -> bool:
+    """Verify coordinates fall within screen boundaries."""
+    w, h = pyautogui.size()
+    return 0 <= x <= w and 0 <= y <= h
