@@ -1,61 +1,57 @@
 import time
 import logging
-from typing import Dict, Any, Tuple
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("autoclicker.processor")
 
+class ClickProcessor:
+    """Processes and validates click actions with error handling for edge cases."""
 
-class ScreenBoundsError(Exception):
-    """Raised when target coordinates fall outside display area."""
-    pass
+    def __init__(self, screen_width: int = 1920, screen_height: int = 1080):
+        if screen_width <= 0 or screen_height <= 0:
+            raise ValueError("Screen dimensions must be positive integers")
+        self.screen_width = screen_width
+        self.screen_height = screen_height
 
+    def validate_coordinates(self, x: int, y: int) -> tuple[int, int]:
+        """Validates and clamps coordinates to the screen boundaries."""
+        try:
+            # Clamp coordinates to ensure they fall within valid screen space
+            clamped_x = max(0, min(int(x), self.screen_width - 1))
+            clamped_y = max(0, min(int(y), self.screen_height - 1))
+            return clamped_x, clamped_y
+        except (TypeError, ValueError):
+            logger.error(f"Invalid coordinate type or value: {x}, {y}. Defaulting to (0,0)")
+            return 0, 0
 
-class InvalidActionError(Exception):
-    """Raised when an unsupported macro action is provided."""
-    pass
-
-
-class ActionProcessor:
-    def __init__(self, screen_size: Tuple[int, int] = (1920, 1080)):
-        self.screen_width, self.screen_height = screen_size
-        self.allowed_actions = {"click", "double_click", "right_click", "hold"}
-
-    def validate_coordinates(self, x: int, y: int) -> None:
-        """Verify target coordinates are within monitor bounds."""
-        if not (0 <= x <= self.screen_width and 0 <= y <= self.screen_height):
-            raise ScreenBoundsError(f"Target ({x}, {y}) outside bounds ({self.screen_width}x{self.screen_height})")
-
-    def process(self, action: Dict[str, Any]) -> bool:
-        """Process automated click action with robust edge case checks."""
-        if not isinstance(action, dict):
-            logger.error("Action payload must be a valid dictionary")
-            return False
-
-        action_type = action.get("type", "click")
-        delay = action.get("delay", 0.0)
+    def execute_click(self, x: int, y: int, interval: float) -> bool:
+        """Safely executes a single click action after a specified interval."""
+        safe_x, safe_y = self.validate_coordinates(x, y)
+        
+        # Prevent negative or extremely tiny sleep intervals leading to CPU thrashing
+        try:
+            safe_interval = max(0.001, float(interval))
+        except (TypeError, ValueError):
+            logger.warning("Invalid interval provided. Defaulting to 0.1s")
+            safe_interval = 0.1
 
         try:
-            if action_type not in self.allowed_actions:
-                raise InvalidActionError(f"Unsupported action: '{action_type}'")
-
-            x, y = action.get("x"), action.get("y")
-            if x is None or y is None:
-                raise ValueError("Action requires valid 'x' and 'y' coordinates")
-
-            self.validate_coordinates(int(x), int(y))
-
-            # Handle negative delay edge cases
-            safe_delay = max(0.0, float(delay))
-            if safe_delay != delay:
-                logger.warning(f"Normalized negative delay {delay}s to 0.0s")
-
-            time.sleep(safe_delay)
-            logger.info(f"Successfully processed {action_type} at ({x}, {y})")
+            time.sleep(safe_interval)
+            # Simulated OS click action for environment safety
+            # In a GUI system, this would trigger actual mouse actions
+            logger.debug(f"Simulated click executed at ({safe_x}, {safe_y}) after {safe_interval}s")
             return True
+        except Exception as exc:
+            logger.error(f"Failed to execute click at ({safe_x}, {safe_y}): {exc}")
+            return False
 
-        except (ScreenBoundsError, InvalidActionError, ValueError) as err:
-            logger.error(f"Validation failure: {err}")
-            return False
-        except Exception as err:
-            logger.critical(f"Unexpected error executing macro action: {err}")
-            return False
+    def process_batch(self, points: list[tuple[int, int]], interval: float) -> int:
+        """Processes a batch of click coordinates, counting successful operations."""
+        successful_clicks = 0
+        if not points:
+            logger.warning("Empty batch of coordinates passed to processor")
+            return 0
+
+        for x, y in points:
+            if self.execute_click(x, y, interval):
+                successful_clicks += 1
+        return successful_clicks
