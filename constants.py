@@ -1,31 +1,33 @@
-from typing import Final
+import platform
 
-# Configuration constants for the autoclicker engine
+# platform detection
+IS_WINDOWS = platform.system() == "Windows"
+IS_MACOS = platform.system() == "Darwin"
+IS_LINUX = platform.system() == "Linux"
 
-DEFAULT_INTERVAL: Final[float] = 0.1
-MAX_CLICK_RATE: Final[float] = 1000.0
-MIN_CLICK_RATE: Final[float] = 0.01
+# default click settings
+DEFAULT_CLICK_INTERVAL = 0.1
+DEFAULT_BUTTON = "left"
 
-# Input simulation constants
-MOUSE_BUTTON_LEFT: Final[str] = "left"
-MOUSE_BUTTON_RIGHT: Final[str] = "right"
+# input mapping
+MOUSE_BUTTON_MAP = {
+    "left": 1,
+    "middle": 2,
+    "right": 3
+}
 
-# UI and logging defaults
-WINDOW_TITLE: Final[str] = "automation-tool-12"
-LOG_FILE_PATH: Final[str] = "logs/autoclicker.log"
+# coordinate boundaries
+SCREEN_WIDTH_MIN = 0
+SCREEN_HEIGHT_MIN = 0
 
-def get_default_settings() -> dict[str, float]:
-    """Returns a dictionary of default application settings."""
-    return {
-        "interval": DEFAULT_INTERVAL,
-        "max_rate": MAX_CLICK_RATE,
-        "min_rate": MIN_CLICK_RATE
-    }
+# timing constants (seconds)
+MIN_DELAY = 0.001
+MAX_DELAY = 60.0
 
-# Coordinate system constants
-SCREEN_ORIGIN_X: Final[int] = 0
-SCREEN_ORIGIN_Y: Final[int] = 0
+# retry configuration
+MAX_RETRIES = 3
+RETRY_DELAY = 0.5
 
-# Exit codes
-EXIT_SUCCESS: Final[int] = 0
-EXIT_FAILURE: Final[int] = 1
+# logging format
+LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+LOG_LEVEL = "INFO"
