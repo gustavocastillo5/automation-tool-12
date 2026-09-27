@@ -1,24 +1,34 @@
-from typing import Union, Tuple
+import time
+import functools
+import logging
 
-def validate_coordinates(x: int, y: int) -> bool:
-    """Verify that click coordinates are non-negative integers."""
-    return isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0
+# Logger instance for automation-tool-12
+logger = logging.getLogger('automation-tool-12')
 
-def validate_interval(interval: Union[int, float]) -> bool:
-    """Check if the click interval is a positive numeric value."""
-    return isinstance(interval, (int, float)) and interval > 0
+def retry_on_failure(retries=3, delay=2, exceptions=(Exception,)):
+    """Decorator for retrying network operations with exponential backoff."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            current_delay = delay
+            for attempt in range(1, retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    last_exception = e
+                    logger.warning(f"Attempt {attempt} failed: {e}. Retrying in {current_delay}s...")
+                    if attempt < retries:
+                        time.sleep(current_delay)
+                        current_delay *= 2
+            logger.error(f"Operation failed after {retries} attempts: {last_exception}")
+            raise last_exception
+        return wrapper
+    return decorator
 
-def validate_button(button: str) -> bool:
-    """Validate mouse button input string against allowed options."""
-    allowed = ('left', 'right', 'middle')
-    return button.lower() in allowed
-
-def sanitize_click_data(x: int, y: int, interval: float) -> Tuple[int, int, float]:
-    """Ensure input values meet system constraints before processing."""
-    if not validate_coordinates(x, y):
-        raise ValueError(f"Invalid coordinates: ({x}, {y})")
-    
-    if not validate_interval(interval):
-        raise ValueError(f"Invalid interval: {interval}")
-        
-    return int(x), int(y), float(interval)
+@retry_on_failure(retries=3, delay=1)
+def validate_connection(target_url):
+    """Simple check for network availability for the autoclicker."""
+    import requests
+    response = requests.get(target_url, timeout=5)
+    return response.status_code == 200
