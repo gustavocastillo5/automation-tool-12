@@ -1,37 +1,50 @@
+import os
 import logging
 from logging.handlers import RotatingFileHandler
-import os
 
-def setup_logger(name: str = 'automation-tool-12', log_file: str = 'app.log') -> logging.Logger:
-    """Configures a rotating file logger for the application."""
+DEFAULT_LOG_DIR = "logs"
+DEFAULT_LOG_FILE = "autoclicker.log"
+
+
+def setup_logger(
+    name: str = "autoclicker",
+    log_dir: str = DEFAULT_LOG_DIR,
+    filename: str = DEFAULT_LOG_FILE,
+    max_bytes: int = 2 * 1024 * 1024,
+    backup_count: int = 5,
+    level: int = logging.INFO,
+) -> logging.Logger:
+    """Configures and returns a logger with file rotation and console output."""
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, filename)
+
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(level)
 
-    # Ensure logs directory exists
-    log_dir = os.path.dirname(log_file)
-    if log_dir and not os.path.exists(log_dir):
-        os.makedirs(log_dir)
+    if logger.hasHandlers():
+        return logger
 
-    # Rotating file handler: 5MB per file, keep 3 backups
-    handler = RotatingFileHandler(
-        log_file, 
-        maxBytes=5 * 1024 * 1024, 
-        backupCount=3
-    )
-
-    # Format with timestamps for debugging
     formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        fmt="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
-    handler.setFormatter(formatter)
 
-    # Prevent duplicate handlers if re-initialized
-    if not logger.handlers:
-        logger.addHandler(handler)
+    # Rotating file handler to prevent unlimited log growth
+    file_handler = RotatingFileHandler(
+        log_path, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
+    )
+    file_handler.setLevel(level)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
 
-    # Optional console output
+    # Console handler for real-time output during execution
     console_handler = logging.StreamHandler()
+    console_handler.setLevel(level)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
     return logger
+
+
+# Main logger instance for autoclicker operations
+log = setup_logger()
