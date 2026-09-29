@@ -1,47 +1,33 @@
 class AutoclickerError(Exception):
-    """Base exception class for all autoclicker-related errors."""
+    """Base exception for all automation-tool-12 errors."""
     pass
 
+class ConfigurationError(AutoclickerError):
+    """Raised when the config file is malformed or invalid."""
+    pass
 
-class InvalidCoordinateError(AutoclickerError):
-    """Raised when click coordinates are outside screen dimensions."""
+class ClickerExecutionError(AutoclickerError):
+    """Raised when the clicking operation fails during runtime."""
+    pass
 
-    def __init__(self, x: int, y: int, max_x: int, max_y: int):
-        self.x = x
-        self.y = y
-        self.max_x = max_x
-        self.max_y = max_y
-        super().__init__(
-            f"Coordinates ({x}, {y}) out of screen bounds (0-{max_x}, 0-{max_y})"
-        )
+class CoordinateOutOfBoundsError(AutoclickerError):
+    """Raised when click coordinates fall outside screen bounds."""
+    def __init__(self, x, y):
+        self.message = f"Coordinates ({x}, {y}) are outside the active screen area."
+        super().__init__(self.message)
 
+class InputDeviceError(AutoclickerError):
+    """Raised when peripheral control fails or is denied."""
+    pass
 
-class InvalidIntervalError(AutoclickerError):
-    """Raised when click interval or delay is mathematically impossible."""
+def validate_coordinates(x, y, width, height):
+    """Validates that provided click coordinates are within display limits."""
+    if not (0 <= x <= width and 0 <= y <= height):
+        raise CoordinateOutOfBoundsError(x, y)
+    return True
 
-    def __init__(self, interval: float):
-        self.interval = interval
-        super().__init__(
-            f"Click interval must be a positive number, got: {interval}"
-        )
-
-
-class InvalidClickCountError(AutoclickerError):
-    """Raised when the requested click count is invalid."""
-
-    def __init__(self, count: int):
-        self.count = count
-        super().__init__(
-            f"Click count must be non-negative or -1 for infinite, got: {count}"
-        )
-
-
-class UnsupportedButtonError(AutoclickerError):
-    """Raised when an unrecognized mouse button is specified."""
-
-    def __init__(self, button: str, valid_buttons: list):
-        self.button = button
-        self.valid_buttons = valid_buttons
-        super().__init__(
-            f"Unsupported mouse button '{button}'. Choose from: {valid_buttons}"
-        )
+def handle_exception(e: Exception):
+    """Centralized formatter for application-wide exceptions."""
+    if isinstance(e, AutoclickerError):
+        return f"[CRITICAL] {e.__class__.__name__}: {str(e)}"
+    return f"[UNKNOWN] An unexpected error occurred: {str(e)}"
