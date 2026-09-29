@@ -1,33 +1,30 @@
-import platform
+from typing import Final, Dict, Any
 
-# platform detection
-IS_WINDOWS = platform.system() == "Windows"
-IS_MACOS = platform.system() == "Darwin"
-IS_LINUX = platform.system() == "Linux"
+# Configuration constants for the automation-tool-12
 
-# default click settings
-DEFAULT_CLICK_INTERVAL = 0.1
-DEFAULT_BUTTON = "left"
+DEFAULT_INTERVAL: Final[float] = 0.5
+MIN_INTERVAL: Final[float] = 0.01
+MAX_INTERVAL: Final[float] = 60.0
 
-# input mapping
-MOUSE_BUTTON_MAP = {
-    "left": 1,
-    "middle": 2,
-    "right": 3
+BUTTON_LEFT: Final[str] = 'left'
+BUTTON_RIGHT: Final[str] = 'right'
+BUTTON_MIDDLE: Final[str] = 'middle'
+
+SUPPORTED_BUTTONS: Final[tuple[str, ...]] = (BUTTON_LEFT, BUTTON_RIGHT, BUTTON_MIDDLE)
+
+DEFAULT_CONFIG: Final[Dict[str, Any]] = {
+    'interval': DEFAULT_INTERVAL,
+    'button': BUTTON_LEFT,
+    'clicks_per_burst': 1,
+    'randomize_delay': False
 }
 
-# coordinate boundaries
-SCREEN_WIDTH_MIN = 0
-SCREEN_HEIGHT_MIN = 0
+EXIT_KEYS: Final[list[str]] = ['esc', 'f10']
 
-# timing constants (seconds)
-MIN_DELAY = 0.001
-MAX_DELAY = 60.0
+def get_version() -> str:
+    """Return the current version of the automation tool."""
+    return "1.0.2"
 
-# retry configuration
-MAX_RETRIES = 3
-RETRY_DELAY = 0.5
-
-# logging format
-LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-LOG_LEVEL = "INFO"
+# Logging configuration constants
+LOG_FORMAT: Final[str] = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+LOG_LEVEL: Final[str] = 'INFO'
