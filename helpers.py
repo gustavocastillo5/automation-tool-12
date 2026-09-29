@@ -1,29 +1,33 @@
-import logging
+import json
+import os
+from typing import Any, Dict
 
-def validate_click_settings(interval, x, y):
-    """Validates input parameters for click automation."""
+def load_click_config(filepath: str) -> Dict[str, Any]:
+    """Reads and parses clicker settings from JSON file."""
+    if not os.path.exists(filepath):
+        return {"interval": 0.1, "button": "left", "repeats": 0}
+    
+    with open(filepath, 'r') as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return {}
+
+def save_click_config(filepath: str, data: Dict[str, Any]) -> bool:
+    """Persists current clicker configuration to local storage."""
     try:
-        if not isinstance(interval, (int, float)) or interval < 0.01:
-            raise ValueError("Interval must be a float/int >= 0.01")
-        
-        if not (isinstance(x, int) and isinstance(y, int)):
-            raise ValueError("Coordinates must be integers")
-            
-        if x < 0 or y < 0:
-            raise ValueError("Coordinates cannot be negative")
-            
+        with open(filepath, 'w') as f:
+            json.dump(data, f, indent=4)
         return True
-    except ValueError as e:
-        logging.error(f"Validation failed: {e}")
+    except (IOError, TypeError):
         return False
 
-def sanitize_input(value, default):
-    """Ensures input is valid or returns a safe default."""
-    try:
-        return float(value) if value is not None else default
-    except (ValueError, TypeError):
-        return default
+def validate_coordinates(coords: tuple) -> bool:
+    """Ensures screen coordinates are within valid bounds."""
+    x, y = coords
+    return isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0
 
-def validate_bounds(x, y, screen_width, screen_height):
-    """Checks if coordinates fall within screen boundaries."""
-    return 0 <= x <= screen_width and 0 <= y <= screen_height
+def format_click_stats(count: int, duration: float) -> str:
+    """Generates human readable string for UI display."""
+    cps = count / duration if duration > 0 else 0
+    return f"Clicks: {count} | Avg Speed: {cps:.2f} cps"
