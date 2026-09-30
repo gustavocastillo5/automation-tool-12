@@ -1,34 +1,37 @@
-import time
-import functools
-import logging
+def validate_click_parameters(interval, count):
+    """
+    Validates input parameters for the autoclicker logic.
+    Ensures interval is positive and count is non-negative.
+    """
+    if not isinstance(interval, (int, float)) or interval <= 0:
+        raise ValueError(f"Interval must be a positive number, got: {interval}")
+    
+    if not isinstance(count, int) or count < 0:
+        raise ValueError(f"Count must be a non-negative integer, got: {count}")
 
-# Logger instance for automation-tool-12
-logger = logging.getLogger('automation-tool-12')
+    return True
 
-def retry_on_failure(retries=3, delay=2, exceptions=(Exception,)):
-    """Decorator for retrying network operations with exponential backoff."""
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            last_exception = None
-            current_delay = delay
-            for attempt in range(1, retries + 1):
-                try:
-                    return func(*args, **kwargs)
-                except exceptions as e:
-                    last_exception = e
-                    logger.warning(f"Attempt {attempt} failed: {e}. Retrying in {current_delay}s...")
-                    if attempt < retries:
-                        time.sleep(current_delay)
-                        current_delay *= 2
-            logger.error(f"Operation failed after {retries} attempts: {last_exception}")
-            raise last_exception
-        return wrapper
-    return decorator
+def validate_coordinate(x, y):
+    """
+    Checks if coordinates are valid screen integers.
+    """
+    if not (isinstance(x, int) and isinstance(y, int)):
+        raise ValueError("Coordinates must be integers")
+    
+    if x < 0 or y < 0:
+        raise ValueError("Coordinates cannot be negative")
+        
+    return True
 
-@retry_on_failure(retries=3, delay=1)
-def validate_connection(target_url):
-    """Simple check for network availability for the autoclicker."""
-    import requests
-    response = requests.get(target_url, timeout=5)
-    return response.status_code == 200
+def validate_input_schema(data):
+    """
+    General schema validation for configuration dictionary.
+    """
+    required_keys = {'interval', 'count', 'x', 'y'}
+    if not all(key in data for key in required_keys):
+        raise KeyError(f"Missing required keys: {required_keys - data.keys()}")
+    
+    validate_click_parameters(data['interval'], data['count'])
+    validate_coordinate(data['x'], data['y'])
+    
+    return True
