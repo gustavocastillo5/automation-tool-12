@@ -1,32 +1,47 @@
-import pyautogui
 import time
-from typing import Tuple, Optional
+import threading
+from typing import Callable, Optional
 
-class AutoClicker:
-    """Automates mouse clicking operations."""
+class HighPrecisionClicker:
+    """High-performance auto-clicker execution loop using precise hybrid timing."""
 
-    def __init__(self, interval: float = 0.1) -> None:
-        """Initialize the clicker with a specific delay interval."""
-        self.interval: float = interval
+    def __init__(self, click_action: Callable[[], None], interval_ms: float = 10.0):
+        self.click_action = click_action
+        self.interval = interval_ms / 1000.0
+        self._running = False
+        self._thread: Optional[threading.Thread] = None
 
-    def click(self, position: Tuple[int, int]) -> None:
-        """Perform a single click at the given coordinates."""
-        pyautogui.click(x=position[0], y=position[1])
-        time.sleep(self.interval)
+    def start(self) -> None:
+        """Start the execution loop in a background thread."""
+        if self._running:
+            return
+        self._running = True
+        self._thread = threading.Thread(target=self._click_loop, daemon=True)
+        self._thread.start()
 
-    def run(self, coordinates: Tuple[int, int], iterations: int) -> None:
-        """Execute a series of clicks at a fixed position."""
-        for _ in range(iterations):
-            self.click(coordinates)
+    def stop(self) -> None:
+        """Stop the execution loop cleanly."""
+        self._running = False
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=1.0)
 
-    def get_mouse_position(self) -> Tuple[int, int]:
-        """Retrieve current X and Y mouse coordinates."""
-        x, y = pyautogui.position()
-        return (int(x), int(y))
+    def _click_loop(self) -> None:
+        """Optimized timing loop combining low-overhead sleep with high-precision polling."""
+        next_click = time.perf_counter()
+        
+        while self._running:
+            now = time.perf_counter()
+            if now >= next_click:
+                self.click_action()
+                next_click += self.interval
+                
+                # Prevent backlog compensation when falling behind
+                if next_click < now:
+                    next_click = now + self.interval
 
-    def emergency_stop(self, key: str = 'q') -> Optional[bool]:
-        """Check for keypress to halt execution."""
-        import keyboard
-        if keyboard.is_pressed(key):
-            return True
-        return False
+            # Dynamic sleep strategy to maximize timing precision while conserving CPU
+            remaining = next_click - time.perf_counter()
+            if remaining > 0.002:
+                time.sleep(remaining - 0.001)
+            elif remaining > 0:
+                time.sleep(0)
