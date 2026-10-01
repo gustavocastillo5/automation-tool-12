@@ -1,31 +1,24 @@
-import time
-from typing import Callable, Any
-from functools import lru_cache
-
-# performance optimization for coordinate validation in hot paths
-
-@lru_cache(maxsize=128)
-def is_within_bounds(x: int, y: int, screen_width: int, screen_height: int) -> bool:
-    """validates if click coordinates are within display boundaries"""
-    return 0 <= x < screen_width and 0 <= y < screen_height
-
-class ClickValidator:
-    """high-frequency validation logic for autoclicker runtime"""
+def validate_click_parameters(interval, count):
+    """
+    Validates user input for autoclicker configuration.
+    Ensures interval is positive and count is non-negative.
+    """
+    if not isinstance(interval, (int, float)) or interval <= 0:
+        raise ValueError(f"Invalid interval: {interval}. Must be a positive number.")
     
-    def __init__(self, width: int, height: int):
-        self.width = width
-        self.height = height
+    if not isinstance(count, int) or count < 0:
+        raise ValueError(f"Invalid click count: {count}. Must be a non-negative integer.")
 
-    def validate_action(self, x: int, y: int) -> bool:
-        # direct arithmetic check for minimal cpu overhead
-        return (0 <= x < self.width) and (0 <= y < self.height)
+    return True
 
-    @staticmethod
-    def debounce_check(last_time: float, interval: float) -> bool:
-        """ensures click rate does not exceed physical limits"""
-        return (time.perf_counter() - last_time) >= interval
+def validate_coordinates(x, y):
+    """
+    Checks if coordinates fall within typical screen boundaries.
+    """
+    if not all(isinstance(val, int) for val in [x, y]):
+        raise ValueError("Coordinates must be integers.")
+    
+    if x < 0 or y < 0:
+        raise ValueError(f"Negative coordinates detected: ({x}, {y}).")
 
-def validate_configuration(config: dict) -> bool:
-    """schema validation for autoclicker settings"""
-    required = ['interval', 'x', 'y']
-    return all(key in config for key in required) and config['interval'] > 0
+    return True
