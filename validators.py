@@ -1,37 +1,31 @@
-def validate_click_parameters(interval, count):
-    """
-    Validates input parameters for the autoclicker logic.
-    Ensures interval is positive and count is non-negative.
-    """
-    if not isinstance(interval, (int, float)) or interval <= 0:
-        raise ValueError(f"Interval must be a positive number, got: {interval}")
-    
-    if not isinstance(count, int) or count < 0:
-        raise ValueError(f"Count must be a non-negative integer, got: {count}")
+import time
+from typing import Callable, Any
+from functools import lru_cache
 
-    return True
+# performance optimization for coordinate validation in hot paths
 
-def validate_coordinate(x, y):
-    """
-    Checks if coordinates are valid screen integers.
-    """
-    if not (isinstance(x, int) and isinstance(y, int)):
-        raise ValueError("Coordinates must be integers")
-    
-    if x < 0 or y < 0:
-        raise ValueError("Coordinates cannot be negative")
-        
-    return True
+@lru_cache(maxsize=128)
+def is_within_bounds(x: int, y: int, screen_width: int, screen_height: int) -> bool:
+    """validates if click coordinates are within display boundaries"""
+    return 0 <= x < screen_width and 0 <= y < screen_height
 
-def validate_input_schema(data):
-    """
-    General schema validation for configuration dictionary.
-    """
-    required_keys = {'interval', 'count', 'x', 'y'}
-    if not all(key in data for key in required_keys):
-        raise KeyError(f"Missing required keys: {required_keys - data.keys()}")
+class ClickValidator:
+    """high-frequency validation logic for autoclicker runtime"""
     
-    validate_click_parameters(data['interval'], data['count'])
-    validate_coordinate(data['x'], data['y'])
-    
-    return True
+    def __init__(self, width: int, height: int):
+        self.width = width
+        self.height = height
+
+    def validate_action(self, x: int, y: int) -> bool:
+        # direct arithmetic check for minimal cpu overhead
+        return (0 <= x < self.width) and (0 <= y < self.height)
+
+    @staticmethod
+    def debounce_check(last_time: float, interval: float) -> bool:
+        """ensures click rate does not exceed physical limits"""
+        return (time.perf_counter() - last_time) >= interval
+
+def validate_configuration(config: dict) -> bool:
+    """schema validation for autoclicker settings"""
+    required = ['interval', 'x', 'y']
+    return all(key in config for key in required) and config['interval'] > 0
