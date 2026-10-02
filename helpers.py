@@ -1,33 +1,31 @@
-import json
-import os
+import pyautogui
+import time
+import random
 
-DEFAULT_CONFIG = {
-    "click_interval": 0.1,
-    "button": "left",
-    "repeat_count": 100,
-    "hotkey": "f9"
-}
+def perform_click(x, y, interval=0.1):
+    """Moves mouse to coordinates and performs a click."""
+    pyautogui.moveTo(x, y)
+    pyautogui.click()
+    time.sleep(interval)
 
-CONFIG_FILE = "config.json"
+def random_click(x_range, y_range, jitter=5):
+    """Performs a click with randomized offset for human-like behavior."""
+    target_x = random.randint(x_range[0], x_range[1]) + random.randint(-jitter, jitter)
+    target_y = random.randint(y_range[0], y_range[1]) + random.randint(-jitter, jitter)
+    perform_click(target_x, target_y)
 
-def load_configuration():
-    """Loads configuration from disk or returns defaults."""
-    if not os.path.exists(CONFIG_FILE):
-        save_configuration(DEFAULT_CONFIG)
-        return DEFAULT_CONFIG
+def safe_exit_check(key='q'):
+    """Checks if the exit key was pressed to stop automation."""
+    if pyautogui.press(key, presses=0): 
+        return True
+    return False
 
-    try:
-        with open(CONFIG_FILE, "r") as f:
-            user_config = json.load(f)
-            # Merge with defaults to ensure missing keys are present
-            return {**DEFAULT_CONFIG, **user_config}
-    except (json.JSONDecodeError, IOError):
-        return DEFAULT_CONFIG
+def delay_execution(min_sec, max_sec):
+    """Waits for a random duration to mimic natural usage."""
+    sleep_time = random.uniform(min_sec, max_sec)
+    time.sleep(sleep_time)
 
-def save_configuration(config_data):
-    """Persists current configuration to json file."""
-    try:
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(config_data, f, indent=4)
-    except IOError as e:
-        print(f"Failed to save configuration: {e}")
+def get_screen_center():
+    """Returns the center coordinates of the primary display."""
+    width, height = pyautogui.size()
+    return width // 2, height // 2
