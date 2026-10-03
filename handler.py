@@ -1,37 +1,47 @@
-import json
-import os
-from typing import Dict, Any
+import time
+import pyautogui
+from typing import Dict, Any, Optional
 
-def load_click_profile(filepath: str) -> Dict[str, Any]:
-    """Loads autoclicker settings from a JSON file."""
-    if not os.path.exists(filepath):
-        return {"interval": 0.1, "button": "left", "iterations": 0}
-    
-    try:
-        with open(filepath, 'r') as f:
-            return json.load(f)
-    except (json.JSONDecodeError, IOError):
-        return {}
+class ClickHandler:
+    """
+    Handles automated mouse clicking sequences.
+    """
 
-def save_click_profile(filepath: str, data: Dict[str, Any]) -> bool:
-    """Persists autoclicker configuration to disk."""
-    try:
-        with open(filepath, 'w') as f:
-            json.dump(data, f, indent=4)
-        return True
-    except IOError:
-        return False
+    def __init__(self, settings: Dict[str, Any]) -> None:
+        """
+        Initialize with click configuration.
+        
+        :param settings: Dictionary containing interval and duration
+        """
+        self.interval: float = settings.get("interval", 1.0)
+        self.button: str = settings.get("button", "left")
 
-def validate_profile(data: Dict[str, Any]) -> bool:
-    """Verifies structure of configuration dictionary."""
-    required_keys = {"interval", "button", "iterations"}
-    return all(key in data for key in required_keys)
+    def perform_click(self, x: int, y: int) -> bool:
+        """
+        Executes a single mouse click at provided coordinates.
 
-def get_default_config() -> Dict[str, Any]:
-    """Returns base template for new profiles."""
-    return {
-        "interval": 0.5,
-        "button": "left",
-        "iterations": 100,
-        "randomization": False
-    }
+        :param x: Horizontal coordinate
+        :param y: Vertical coordinate
+        :return: Success status of the action
+        """
+        try:
+            pyautogui.click(x=x, y=y, button=self.button)
+            time.sleep(self.interval)
+            return True
+        except Exception:
+            return False
+
+    def run_sequence(self, coordinates: list[tuple[int, int]]) -> None:
+        """
+        Iterates through a list of coordinates to trigger clicks.
+
+        :param coordinates: List of (x, y) tuples
+        """
+        for pos in coordinates:
+            x, y = pos
+            self.perform_click(x, y)
+
+if __name__ == "__main__":
+    config: Dict[str, Any] = {"interval": 0.5, "button": "left"}
+    handler = ClickHandler(config)
+    handler.run_sequence([(100, 100), (200, 200)])
