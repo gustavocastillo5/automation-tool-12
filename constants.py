@@ -1,30 +1,40 @@
-from typing import Final, Dict, Any
+import sys
+from enum import Enum, unique
 
-# Configuration constants for the automation-tool-12
 
-DEFAULT_INTERVAL: Final[float] = 0.5
-MIN_INTERVAL: Final[float] = 0.01
-MAX_INTERVAL: Final[float] = 60.0
+@unique
+class ClickButton(str, Enum):
+    """Mouse buttons supported by the autoclicker."""
 
-BUTTON_LEFT: Final[str] = 'left'
-BUTTON_RIGHT: Final[str] = 'right'
-BUTTON_MIDDLE: Final[str] = 'middle'
+    LEFT = "left"
+    RIGHT = "right"
+    MIDDLE = "middle"
 
-SUPPORTED_BUTTONS: Final[tuple[str, ...]] = (BUTTON_LEFT, BUTTON_RIGHT, BUTTON_MIDDLE)
 
-DEFAULT_CONFIG: Final[Dict[str, Any]] = {
-    'interval': DEFAULT_INTERVAL,
-    'button': BUTTON_LEFT,
-    'clicks_per_burst': 1,
-    'randomize_delay': False
-}
+@unique
+class ClickType(str, Enum):
+    """Click actions supported by the engine."""
 
-EXIT_KEYS: Final[list[str]] = ['esc', 'f10']
+    SINGLE = "single"
+    DOUBLE = "double"
+    HOLD = "hold"
 
-def get_version() -> str:
-    """Return the current version of the automation tool."""
-    return "1.0.2"
 
-# Logging configuration constants
-LOG_FORMAT: Final[str] = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-LOG_LEVEL: Final[str] = 'INFO'
+# Timing and execution defaults
+DEFAULT_DELAY_SECONDS = 0.1
+DEFAULT_INTERVAL_SECONDS = 1.0
+DEFAULT_CLICK_COUNT = 0  # Zero represents infinite loops
+
+# Default keyboard control hotkeys
+DEFAULT_START_HOTKEY = "f6"
+DEFAULT_STOP_HOTKEY = "f7"
+DEFAULT_EXIT_HOTKEY = "f8"
+
+# Safe operational boundaries to prevent thread locking
+MIN_DELAY_LIMIT = 0.001
+MAX_DELAY_LIMIT = 86400.0  # 24 hours
+
+# Operating system flags
+IS_WINDOWS = sys.platform == "win32"
+IS_MACOS = sys.platform == "darwin"
+IS_LINUX = sys.platform.startswith("linux")
