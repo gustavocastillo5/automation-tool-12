@@ -1,33 +1,36 @@
 import json
-import os
+from typing import Dict, Any, Optional
 
-DEFAULT_CONFIG = {
-    "interval": 0.1,
-    "button": "left",
-    "hotkey": "f6",
-    "repeat_count": 0
-}
+class ConfigManager:
+    """Handles loading and saving of autoclicker settings."""
 
-def load_config(filepath="settings.json"):
-    """Loads configuration from a JSON file or returns defaults."""
-    if not os.path.exists(filepath):
-        return DEFAULT_CONFIG
-    
-    try:
-        with open(filepath, "r") as f:
-            return {**DEFAULT_CONFIG, **json.load(f)}
-    except (IOError, ValueError):
-        return DEFAULT_CONFIG
+    def __init__(self, filepath: str = "settings.json") -> None:
+        self.filepath: str = filepath
+        self.settings: Dict[str, Any] = {
+            "interval": 0.1,
+            "button": "left",
+            "repeat": True
+        }
 
-def save_config(config, filepath="settings.json"):
-    """Persists current configuration state to disk."""
-    try:
-        with open(filepath, "w") as f:
-            json.dump(config, f, indent=4)
-    except IOError as e:
-        print(f"Failed to save configuration: {e}")
+    def load(self) -> Dict[str, Any]:
+        """Reads configuration from a JSON file."""
+        try:
+            with open(self.filepath, "r") as file:
+                self.settings.update(json.load(file))
+        except (FileNotFoundError, json.JSONDecodeError):
+            self.save()
+        return self.settings
 
-if __name__ == "__main__":
-    # Demo loading
-    current_cfg = load_config()
-    print(f"Active configuration: {current_cfg}")
+    def save(self) -> None:
+        """Writes current settings to a JSON file."""
+        with open(self.filepath, "w") as file:
+            json.dump(self.settings, file, indent=4)
+
+    def update(self, key: str, value: Any) -> None:
+        """Updates a specific setting key-value pair."""
+        self.settings[key] = value
+        self.save()
+
+    def get(self, key: str, default: Optional[Any] = None) -> Any:
+        """Retrieves a setting with an optional default fallback."""
+        return self.settings.get(key, default)
