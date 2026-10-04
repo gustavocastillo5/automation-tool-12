@@ -1,31 +1,48 @@
-import pyautogui
-import time
 import random
+import time
+from typing import Tuple, Optional
 
-def perform_click(x, y, interval=0.1):
-    """Moves mouse to coordinates and performs a click."""
-    pyautogui.moveTo(x, y)
-    pyautogui.click()
-    time.sleep(interval)
+def calculate_delay(clicks_per_second: float, humanize: bool = False) -> float:
+    """
+    Calculate the delay in seconds between clicks.
 
-def random_click(x_range, y_range, jitter=5):
-    """Performs a click with randomized offset for human-like behavior."""
-    target_x = random.randint(x_range[0], x_range[1]) + random.randint(-jitter, jitter)
-    target_y = random.randint(y_range[0], y_range[1]) + random.randint(-jitter, jitter)
-    perform_click(target_x, target_y)
+    If humanize is True, adds a small random deviation to simulate
+    human behavior and bypass basic automation detection.
+    """
+    if clicks_per_second <= 0:
+        raise ValueError("Clicks per second must be greater than zero.")
 
-def safe_exit_check(key='q'):
-    """Checks if the exit key was pressed to stop automation."""
-    if pyautogui.press(key, presses=0): 
-        return True
-    return False
+    base_delay = 1.0 / clicks_per_second
 
-def delay_execution(min_sec, max_sec):
-    """Waits for a random duration to mimic natural usage."""
-    sleep_time = random.uniform(min_sec, max_sec)
-    time.sleep(sleep_time)
+    if humanize:
+        # Add a random jitter of up to 15% of the base delay
+        jitter = random.uniform(-0.15, 0.15) * base_delay
+        return max(0.001, base_delay + jitter)
 
-def get_screen_center():
-    """Returns the center coordinates of the primary display."""
-    width, height = pyautogui.size()
-    return width // 2, height // 2
+    return base_delay
+
+def parse_coordinate_string(coords: str) -> Optional[Tuple[int, int]]:
+    """
+    Parse a comma-separated coordinate string (e.g., '100,200') into integer tuple.
+    Returns None if the format is invalid.
+    """
+    try:
+        parts = coords.replace(" ", "").split(",")
+        if len(parts) != 2:
+            return None
+        return int(parts[0]), int(parts[1])
+    except ValueError:
+        return None
+
+def is_within_screen_bounds(x: int, y: int, screen_width: int, screen_height: int) -> bool:
+    """
+    Check if the target coordinates are within the screen boundaries.
+    """
+    return 0 <= x <= screen_width and 0 <= y <= screen_height
+
+def human_like_pause(min_seconds: float = 0.1, max_seconds: float = 0.5) -> None:
+    """
+    Pause the execution for a random period to simulate human reaction times.
+    """
+    duration = random.uniform(min_seconds, max_seconds)
+    time.sleep(duration)
