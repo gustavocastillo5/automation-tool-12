@@ -1,47 +1,64 @@
 import time
-import threading
-from typing import Callable, Optional
+import logging
 
-class HighPrecisionClicker:
-    """High-performance auto-clicker execution loop using precise hybrid timing."""
+try:
+    import pyautogui
+    pyautogui.FAILSAFE = True
+except ImportError:
+    class MockPyAutoGUI:
+        FAILSAFE = True
+        def size(self):
+            return (1920, 1080)
+        def click(self, x, y):
+            pass
+    pyautogui = MockPyAutoGUI()
 
-    def __init__(self, click_action: Callable[[], None], interval_ms: float = 10.0):
-        self.click_action = click_action
-        self.interval = interval_ms / 1000.0
-        self._running = False
-        self._thread: Optional[threading.Thread] = None
+logger = logging.getLogger('automation_tool.core')
 
-    def start(self) -> None:
-        """Start the execution loop in a background thread."""
-        if self._running:
+class ClickerCore:
+    def __init__(self, interval: float = 0.1):
+        if interval <= 0:
+            raise ValueError('Interval must be a positive float value')
+        self.interval = interval
+        self.running = False
+
+    def safe_click(self, x: int, y: int) -> bool:
+        """Performs a click with boundary safety checks and error handling."""
+        try:
+            screen_width, screen_height = pyautogui.size()
+        except Exception as e:
+            logger.error(f'Failed to retrieve screen dimensions: {e}')
+            return False
+
+        if not (0 <= x < screen_width and 0 <= y < screen_height):
+            logger.warning(f'Click target ({x}, {y}) is out of screen boundaries ({screen_width}x{screen_height})')
+            return False
+
+        try:
+            pyautogui.click(x, y)
+            return True
+        except Exception as e:
+            logger.error(f'Click execution failed at ({x}, {y}): {e}')
+            self.running = False
+            return False
+
+    def run_sequence(self, coordinates: list, clicks_count: int = 10):
+        """Executes a series of target clicks with safeguard validation."""
+        if not coordinates:
+            logger.error('No valid coordinates provided for click sequence')
             return
-        self._running = True
-        self._thread = threading.Thread(target=self._click_loop, daemon=True)
-        self._thread.start()
 
-    def stop(self) -> None:
-        """Stop the execution loop cleanly."""
-        self._running = False
-        if self._thread and self._thread.is_alive():
-            self._thread.join(timeout=1.0)
+        self.running = True
+        clicks_done = 0
 
-    def _click_loop(self) -> None:
-        """Optimized timing loop combining low-overhead sleep with high-precision polling."""
-        next_click = time.perf_counter()
-        
-        while self._running:
-            now = time.perf_counter()
-            if now >= next_click:
-                self.click_action()
-                next_click += self.interval
-                
-                # Prevent backlog compensation when falling behind
-                if next_click < now:
-                    next_click = now + self.interval
-
-            # Dynamic sleep strategy to maximize timing precision while conserving CPU
-            remaining = next_click - time.perf_counter()
-            if remaining > 0.002:
-                time.sleep(remaining - 0.001)
-            elif remaining > 0:
-                time.sleep(0)
+        while self.running and clicks_done < clicks_count:
+            for x, y in coordinates:
+                if not self.running:
+                    break
+                if not self.safe_click(x, y):
+                    logger.warning('Terminating sequence due to click error or fail-safe trigger')
+                    self.running = False
+                    break
+                clicks_done += 1
+                time.sleep(self.interval)
+        self.running = False
