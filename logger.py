@@ -2,32 +2,34 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 
-def setup_logger(name: str, log_file: str = 'automation.log') -> logging.Logger:
-    """Initializes a rotating file logger for the application."""
+def setup_logger(name: str = 'automation-tool-12') -> logging.Logger:
+    """Configures a rotating file logger for the application."""
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
 
-    # Prevent duplicate handlers if re-initialized
-    if not logger.handlers:
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
 
-        # Keep up to 5MB per file, store 3 backups
-        handler = RotatingFileHandler(
-            log_file, 
-            maxBytes=5 * 1024 * 1024, 
-            backupCount=3
-        )
-        handler.setFormatter(formatter)
-
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-
-        logger.addHandler(handler)
-        logger.addHandler(console_handler)
+    # 5MB per file, keep 3 backups
+    handler = RotatingFileHandler(
+        'logs/app.log', 
+        maxBytes=5 * 1024 * 1024, 
+        backupCount=3
+    )
+    
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    handler.setFormatter(formatter)
+    
+    logger.addHandler(handler)
+    
+    # Also log to console for development visibility
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
 
     return logger
 
-# Global instance for tool-wide use
-app_logger = setup_logger('automation-tool-12')
+# Instance for global use
+logger = setup_logger()
