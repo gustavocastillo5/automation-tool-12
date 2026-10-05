@@ -1,37 +1,29 @@
 import time
-import threading
-from queue import Queue
+import random
+import pyautogui
 
-class ClickQueue:
-    """Thread-safe buffer for click operations to minimize latency."""
-    def __init__(self):
-        self._queue = Queue()
-        self._stop_event = threading.Event()
-        self._worker_thread = threading.Thread(target=self._process, daemon=True)
-        self._worker_thread.start()
+def perform_click(x, y, interval=0.1):
+    """Move mouse to coordinates and perform a click."""
+    pyautogui.moveTo(x, y)
+    pyautogui.click()
+    time.sleep(interval)
 
-    def add_click(self, x: int, y: int):
-        """Push click task to the processing queue."""
-        self._queue.put((x, y))
+def random_delay(min_ms=100, max_ms=500):
+    """Wait for a randomized duration to simulate human input."""
+    delay = random.uniform(min_ms, max_ms) / 1000
+    time.sleep(delay)
 
-    def _process(self):
-        """Background loop to execute clicks without blocking main logic."""
-        import pyautogui
-        pyautogui.PAUSE = 0.001
-        while not self._stop_event.is_set():
-            try:
-                coords = self._queue.get(timeout=0.1)
-                if coords:
-                    pyautogui.click(coords[0], coords[1])
-                    self._queue.task_done()
-            except Exception:
-                continue
+def get_screen_center():
+    """Retrieve the center coordinates of the primary monitor."""
+    width, height = pyautogui.size()
+    return width // 2, height // 2
 
-    def shutdown(self):
-        """Gracefully stop the worker thread."""
-        self._stop_event.set()
-        self._worker_thread.join()
+def safe_exit():
+    """Emergency stop for the automation process."""
+    pyautogui.FAILSAFE = True
+    print("Failsafe enabled. Move mouse to screen corner to abort.")
 
-def batch_process_coordinates(coords: list, handler: callable):
-    """Optimization of coordinate iteration using generator expressions."""
-    return (handler(x, y) for x, y in coords)
+def validate_coordinates(x, y):
+    """Check if coordinates are within screen boundaries."""
+    width, height = pyautogui.size()
+    return 0 <= x <= width and 0 <= y <= height
