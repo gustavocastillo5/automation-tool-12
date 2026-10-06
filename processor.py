@@ -1,56 +1,75 @@
-import time
 import logging
+import time
+from typing import Dict, List, Tuple, Union
 
 logger = logging.getLogger("autoclicker.processor")
 
-class ActionProcessor:
-    """Processes and executes a sequence of simulated mouse and delay events."""
 
-    def __init__(self, safe_mode: bool = True):
-        self.safe_mode = safe_mode
-        self._running = False
+class ScreenBoundsError(ValueError):
+    """Raised when coordinates fall outside allowed physical or safety bounds."""
+    pass
 
-    def execute_sequence(self, actions: list) -> None:
-        """Executes a list of actions sequentially with safety checks."""
-        self._running = True
-        logger.info(f"Starting sequence execution with {len(actions)} actions")
 
-        for index, action in enumerate(actions):
-            if not self._running:
-                logger.info("Sequence execution aborted by user")
+class ClickProcessor:
+    """Manages the validation and safe execution of automated clicks."""
+
+    def __init__(self, screen_resolution: Tuple[int, int], safety_margin: int = 10):
+        self.width, self.height = screen_resolution
+        self.safety_margin = safety_margin
+        self.is_running = False
+
+    def validate_coordinates(self, x: int, y: int) -> bool:
+        """Validates if coordinates are within safe screen boundaries."""
+        if x < self.safety_margin or x > (self.width - self.safety_margin):
+            return False
+        if y < self.safety_margin or y > (self.height - self.safety_margin):
+            return False
+        if x <= self.safety_margin and y <= self.safety_margin:
+            return False
+        return True
+
+    def process_click_queue(
+        self, clicks: List[Tuple[int, int, float]]
+    ) -> Dict[str, Union[int, List[str]]]:
+        """Processes a queue of clicks with safe boundary checks and delays."""
+        self.is_running = True
+        processed_count = 0
+        errors = []
+
+        for index, click_event in enumerate(clicks):
+            if not self.is_running:
+                logger.info("Processing halted by safety event.")
                 break
 
-            action_type = action.get("type")
-            logger.debug(f"Processing action {index + 1}: {action_type}")
-
-            if action_type == "click":
-                self._execute_click(action)
-            elif action_type == "delay":
-                self._execute_delay(action)
-            else:
-                logger.warning(f"Unsupported action type encountered: {action_type}")
-
-        self._running = False
-
-    def cancel(self) -> None:
-        """Signals the processor to stop running the current sequence."""
-        self._running = False
-
-    def _execute_click(self, action: dict) -> None:
-        x = action.get("x", 0)
-        y = action.get("y", 0)
-        clicks = action.get("clicks", 1)
-        button = action.get("button", "left")
-
-        logger.info(f"Simulating click: {button} at ({x}, {y}) x{clicks}")
-        if not self.safe_mode:
             try:
-                import pyautogui
-                pyautogui.click(x=x, y=y, clicks=clicks, button=button)
-            except ImportError:
-                logger.error("pyautogui library missing; click action skipped in active mode")
+                if len(click_event) != 3:
+                    raise ValueError(
+                        f"Malformed click data at index {index}. Expected (x, y, delay)."
+                    )
 
-    def _execute_delay(self, action: dict) -> None:
-        duration = action.get("duration", 1.0)
-        logger.info(f"Applying delay of {duration} seconds")
-        time.sleep(duration)
+                x, y, delay = click_event
+
+                if not self.validate_coordinates(x, y):
+                    raise ScreenBoundsError(
+                        f"Click coordinate ({x}, {y}) violates safety margins."
+                    )
+
+                if delay < 0.0:
+                    raise ValueError(f"Negative delay {delay}s is not permitted.")
+
+                logger.debug(f"Executing simulated click at ({x}, {y})")
+                time.sleep(delay)
+                processed_count += 1
+
+            except (ScreenBoundsError, ValueError) as err:
+                error_msg = f"Event {index} skipped: {str(err)}"
+                logger.error(error_msg)
+                errors.append(error_msg)
+            except Exception as unexpected_err:
+                error_msg = f"Unexpected system error at event {index}: {str(unexpected_err)}"
+                logger.critical(error_msg)
+                errors.append(error_msg)
+                self.is_running = False
+
+        self.is_running = False
+        return {"processed": processed_count, "errors": errors}
