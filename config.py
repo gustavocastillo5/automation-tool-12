@@ -1,36 +1,39 @@
 import json
-from typing import Dict, Any, Optional
+import os
+from typing import Dict, Any
 
-class ConfigManager:
-    """Handles loading and saving of autoclicker settings."""
+DEFAULT_CONFIG = {
+    "click_interval": 0.1,
+    "hotkey": "f8",
+    "repeat_count": 0,
+    "mouse_button": "left"
+}
 
-    def __init__(self, filepath: str = "settings.json") -> None:
-        self.filepath: str = filepath
-        self.settings: Dict[str, Any] = {
-            "interval": 0.1,
-            "button": "left",
-            "repeat": True
-        }
+CONFIG_FILE = "settings.json"
 
-    def load(self) -> Dict[str, Any]:
-        """Reads configuration from a JSON file."""
-        try:
-            with open(self.filepath, "r") as file:
-                self.settings.update(json.load(file))
-        except (FileNotFoundError, json.JSONDecodeError):
-            self.save()
-        return self.settings
+def load_config() -> Dict[str, Any]:
+    """Loads configuration from JSON file with defaults."""
+    if not os.path.exists(CONFIG_FILE):
+        save_config(DEFAULT_CONFIG)
+        return DEFAULT_CONFIG
 
-    def save(self) -> None:
-        """Writes current settings to a JSON file."""
-        with open(self.filepath, "w") as file:
-            json.dump(self.settings, file, indent=4)
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            user_config = json.load(f)
+            # Merge with defaults to ensure missing keys are handled
+            config = DEFAULT_CONFIG.copy()
+            config.update(user_config)
+            return config
+    except (json.JSONDecodeError, IOError):
+        return DEFAULT_CONFIG
 
-    def update(self, key: str, value: Any) -> None:
-        """Updates a specific setting key-value pair."""
-        self.settings[key] = value
-        self.save()
+def save_config(config: Dict[str, Any]) -> None:
+    """Saves current configuration to JSON file."""
+    try:
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(config, f, indent=4)
+    except IOError as e:
+        print(f"Failed to save configuration: {e}")
 
-    def get(self, key: str, default: Optional[Any] = None) -> Any:
-        """Retrieves a setting with an optional default fallback."""
-        return self.settings.get(key, default)
+# Initialize global settings
+settings = load_config()
