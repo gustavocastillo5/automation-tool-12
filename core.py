@@ -1,64 +1,34 @@
+import pyautogui
 import time
-import logging
+import random
 
-try:
-    import pyautogui
-    pyautogui.FAILSAFE = True
-except ImportError:
-    class MockPyAutoGUI:
-        FAILSAFE = True
-        def size(self):
-            return (1920, 1080)
-        def click(self, x, y):
-            pass
-    pyautogui = MockPyAutoGUI()
+def safe_click(x: int, y: int, interval: float = 0.1):
+    """Performs a click at specified coordinates with randomized delay."""
+    pyautogui.moveTo(x, y)
+    time.sleep(random.uniform(0.05, interval))
+    pyautogui.click()
 
-logger = logging.getLogger('automation_tool.core')
+def drag_and_drop(start_x: int, start_y: int, end_x: int, end_y: int, duration: float = 0.5):
+    """Simulates a drag motion between two points."""
+    pyautogui.moveTo(start_x, start_y)
+    pyautogui.dragTo(end_x, end_y, duration=duration, button='left')
 
-class ClickerCore:
-    def __init__(self, interval: float = 0.1):
-        if interval <= 0:
-            raise ValueError('Interval must be a positive float value')
-        self.interval = interval
-        self.running = False
+def batch_click(points: list, delay: float = 1.0):
+    """Executes a sequence of clicks defined by list of tuples."""
+    for x, y in points:
+        safe_click(x, y)
+        time.sleep(delay)
 
-    def safe_click(self, x: int, y: int) -> bool:
-        """Performs a click with boundary safety checks and error handling."""
-        try:
-            screen_width, screen_height = pyautogui.size()
-        except Exception as e:
-            logger.error(f'Failed to retrieve screen dimensions: {e}')
-            return False
+def get_screen_center():
+    """Returns the center coordinates of the primary display."""
+    width, height = pyautogui.size()
+    return width // 2, height // 2
 
-        if not (0 <= x < screen_width and 0 <= y < screen_height):
-            logger.warning(f'Click target ({x}, {y}) is out of screen boundaries ({screen_width}x{screen_height})')
-            return False
+def perform_double_click(x: int, y: int):
+    """Performs a double click operation at screen coordinates."""
+    pyautogui.doubleClick(x, y)
 
-        try:
-            pyautogui.click(x, y)
-            return True
-        except Exception as e:
-            logger.error(f'Click execution failed at ({x}, {y}): {e}')
-            self.running = False
-            return False
-
-    def run_sequence(self, coordinates: list, clicks_count: int = 10):
-        """Executes a series of target clicks with safeguard validation."""
-        if not coordinates:
-            logger.error('No valid coordinates provided for click sequence')
-            return
-
-        self.running = True
-        clicks_done = 0
-
-        while self.running and clicks_done < clicks_count:
-            for x, y in coordinates:
-                if not self.running:
-                    break
-                if not self.safe_click(x, y):
-                    logger.warning('Terminating sequence due to click error or fail-safe trigger')
-                    self.running = False
-                    break
-                clicks_done += 1
-                time.sleep(self.interval)
-        self.running = False
+if __name__ == '__main__':
+    # Example usage: click the center of the screen
+    cx, cy = get_screen_center()
+    safe_click(cx, cy)
