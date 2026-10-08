@@ -1,49 +1,32 @@
+import json
 import logging
-import os
-from logging.handlers import RotatingFileHandler
+from pathlib import Path
+from typing import Dict, Any
 
-def setup_logger(name: str = "autoclicker", log_file: str = "autoclicker.log") -> logging.Logger:
-    """
-    Configures and returns a logger with console and rotating file handlers.
-    """
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
-    
-    # Prevent adding handlers multiple times
-    if logger.handlers:
-        return logger
+# Configure logging for automation-tool-12
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('autoclicker')
 
-    # Unified formatting for output
-    log_format = logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
-    )
-
-    # Console handler for standard output (INFO level)
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(log_format)
-    logger.addHandler(console_handler)
-
-    # Rotating file handler for debugging (DEBUG level, max 5MB, 3 backups)
+def save_click_data(filepath: str, data: Dict[str, Any]) -> None:
+    """Persists autoclicker configuration to a local JSON file."""
     try:
-        log_dir = os.path.dirname(log_file)
-        if log_dir and not os.path.exists(log_dir):
-            os.makedirs(log_dir, exist_ok=True)
+        path = Path(filepath)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=4)
+        logger.info(f"Successfully saved configuration to {filepath}")
+    except (IOError, TypeError) as e:
+        logger.error(f"Failed to save data: {e}")
 
-        file_handler = RotatingFileHandler(
-            log_file,
-            maxBytes=5 * 1024 * 1024,  # 5 MB limit
-            backupCount=3,
-            encoding="utf-8"
-        )
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(log_format)
-        logger.addHandler(file_handler)
-    except OSError as e:
-        logger.warning(f"Failed to initialize rotating file log: {e}")
-
-    return logger
-
-# Default instantiated logger for immediate use across module
-log = setup_logger()
+def load_click_data(filepath: str) -> Dict[str, Any]:
+    """Retrieves stored click settings from a JSON file."""
+    path = Path(filepath)
+    if not path.exists():
+        logger.warning(f"Configuration file {filepath} not found")
+        return {}
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        logger.error(f"Data corruption in {filepath}: {e}")
+        return {}
