@@ -1,32 +1,44 @@
-import json
 import logging
-from pathlib import Path
-from typing import Dict, Any
+import os
+import sys
+from logging.handlers import RotatingFileHandler
 
-# Configure logging for automation-tool-12
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('autoclicker')
+class SafeLogger:
+    """
+    Thread-safe logger for the autoclicker tool with fallback error handling
+    for permission issues, missing directories, and full disks.
+    """
+    def __init__(self, name: str = 'autoclicker', log_file: str = 'logs/app.log'):
+        self.logger = logging.getLogger(name)
+        self.logger.setLevel(logging.DEBUG)
+        self.logger.handlers.clear()  # Prevent duplicate handlers across instances
 
-def save_click_data(filepath: str, data: Dict[str, Any]) -> None:
-    """Persists autoclicker configuration to a local JSON file."""
-    try:
-        path = Path(filepath)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4)
-        logger.info(f"Successfully saved configuration to {filepath}")
-    except (IOError, TypeError) as e:
-        logger.error(f"Failed to save data: {e}")
+        # Standard console handler (always safe fallback)
+        console_formatter = logging.Formatter('[%(levelname)s] %(asctime)s - %(message)s')
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(console_formatter)
+        console_handler.setLevel(logging.INFO)
+        self.logger.addHandler(console_handler)
 
-def load_click_data(filepath: str) -> Dict[str, Any]:
-    """Retrieves stored click settings from a JSON file."""
-    path = Path(filepath)
-    if not path.exists():
-        logger.warning(f"Configuration file {filepath} not found")
-        return {}
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except json.JSONDecodeError as e:
-        logger.error(f"Data corruption in {filepath}: {e}")
-        return {}
+        # Attempt to set up rotating file handler with robust edge-case handling
+        try:
+            log_dir = os.path.dirname(log_file)
+            if log_dir and not os.path.exists(log_dir):
+                os.makedirs(log_dir, exist_ok=True)
+
+            # Rotating file handler prevents filling up the disk
+            file_handler = RotatingFileHandler(
+                log_file, maxBytes=1024 * 1024, backupCount=3, encoding='utf-8'
+            )
+            file_formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d - %(message)s')
+            file_handler.setFormatter(file_formatter)
+            file_handler.setLevel(logging.DEBUG)
+            self.logger.addHandler(file_handler)
+        except (OSError, PermissionError) as e:
+            # Gracefully fall back to console logging if directories are read-only or full
+            self.logger.warning(
+                f'File logging disabled. Failed to initialize log file at {log_file} due to: {e}'
+            )
+
+    def get_logger(self) -> logging.Logger:
+        return self.logger
