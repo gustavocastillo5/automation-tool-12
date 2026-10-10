@@ -1,47 +1,42 @@
-import time
 import pyautogui
-from typing import Dict, Any, Optional
+import time
+from typing import Tuple, Optional
 
 class ClickHandler:
-    """
-    Handles automated mouse clicking sequences.
-    """
+    """Handles mouse click automation logic for the tool."""
 
-    def __init__(self, settings: Dict[str, Any]) -> None:
+    def __init__(self, interval: float = 0.1) -> None:
+        """Initialize the clicker with a specified interval."""
+        self.interval: float = interval
+
+    def perform_click(self, coordinates: Tuple[int, int]) -> bool:
         """
-        Initialize with click configuration.
+        Executes a mouse click at the specified (x, y) screen coordinates.
         
-        :param settings: Dictionary containing interval and duration
-        """
-        self.interval: float = settings.get("interval", 1.0)
-        self.button: str = settings.get("button", "left")
-
-    def perform_click(self, x: int, y: int) -> bool:
-        """
-        Executes a single mouse click at provided coordinates.
-
-        :param x: Horizontal coordinate
-        :param y: Vertical coordinate
-        :return: Success status of the action
+        Returns True if successful, False otherwise.
         """
         try:
-            pyautogui.click(x=x, y=y, button=self.button)
+            x, y = coordinates
+            pyautogui.click(x, y)
             time.sleep(self.interval)
             return True
-        except Exception:
+        except (pyautogui.FailSafeException, ValueError) as e:
+            print(f"Click execution failed: {e}")
             return False
 
-    def run_sequence(self, coordinates: list[tuple[int, int]]) -> None:
+    def rapid_burst(self, coordinates: Tuple[int, int], count: int) -> None:
         """
-        Iterates through a list of coordinates to trigger clicks.
-
-        :param coordinates: List of (x, y) tuples
+        Executes a sequence of clicks at a single location.
+        
+        :param coordinates: Tuple containing x and y screen positions
+        :param count: Number of times to repeat the click
         """
-        for pos in coordinates:
-            x, y = pos
-            self.perform_click(x, y)
+        for _ in range(count):
+            self.perform_click(coordinates)
 
-if __name__ == "__main__":
-    config: Dict[str, Any] = {"interval": 0.5, "button": "left"}
-    handler = ClickHandler(config)
-    handler.run_sequence([(100, 100), (200, 200)])
+    def get_mouse_position(self) -> Tuple[int, int]:
+        """
+        Retrieves the current cursor position on the screen.
+        """
+        pos = pyautogui.position()
+        return (int(pos.x), int(pos.y))
