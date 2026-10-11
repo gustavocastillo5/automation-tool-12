@@ -1,42 +1,40 @@
+import logging
 import pyautogui
 import time
-from typing import Tuple, Optional
 
-class ClickHandler:
-    """Handles mouse click automation logic for the tool."""
+# Configure logger for automation monitoring
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('automation-tool-12')
 
-    def __init__(self, interval: float = 0.1) -> None:
-        """Initialize the clicker with a specified interval."""
-        self.interval: float = interval
+def execute_click(x: int, y: int, delay: float = 0.5):
+    """Performs a mouse click with boundary and failure validation."""
+    try:
+        screen_width, screen_height = pyautogui.size()
 
-    def perform_click(self, coordinates: Tuple[int, int]) -> bool:
-        """
-        Executes a mouse click at the specified (x, y) screen coordinates.
-        
-        Returns True if successful, False otherwise.
-        """
-        try:
-            x, y = coordinates
-            pyautogui.click(x, y)
-            time.sleep(self.interval)
-            return True
-        except (pyautogui.FailSafeException, ValueError) as e:
-            print(f"Click execution failed: {e}")
+        # Validation of screen bounds to prevent out-of-range exceptions
+        if not (0 <= x < screen_width and 0 <= y < screen_height):
+            logger.error(f"Coordinates ({x}, {y}) out of screen bounds.")
             return False
 
-    def rapid_burst(self, coordinates: Tuple[int, int], count: int) -> None:
-        """
-        Executes a sequence of clicks at a single location.
-        
-        :param coordinates: Tuple containing x and y screen positions
-        :param count: Number of times to repeat the click
-        """
-        for _ in range(count):
-            self.perform_click(coordinates)
+        # Perform the action
+        pyautogui.moveTo(x, y)
+        pyautogui.click()
+        time.sleep(delay)
+        return True
 
-    def get_mouse_position(self) -> Tuple[int, int]:
-        """
-        Retrieves the current cursor position on the screen.
-        """
-        pos = pyautogui.position()
-        return (int(pos.x), int(pos.y))
+    except pyautogui.FailSafeException:
+        logger.warning("Fail-safe triggered: process aborted by user.")
+        return False
+    except Exception as e:
+        logger.critical(f"Unexpected error during click execution: {e}")
+        return False
+
+def safe_execute_sequence(points: list):
+    """Handles batch processing with individual point error trapping."""
+    for point in points:
+        if len(point) != 2:
+            logger.warning(f"Skipping invalid point data: {point}")
+            continue
+        if not execute_click(point[0], point[1]):
+            logger.info("Sequence halted due to click failure.")
+            break
