@@ -1,15 +1,13 @@
 # automation-tool-12
 
-`automation-tool-12` is a high-performance Python-based autoclicker designed for task automation and repetitive interface interaction. It utilizes low-level system hooks to provide reliable performance with minimal CPU overhead.
-
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+`automation-tool-12` is a high-performance Python-based autoclicker designed for task automation and repetitive interface interaction. It utilizes the `pynput` library to deliver low-latency mouse event simulation with minimal system resource consumption.
 
 ## Features
 
-*   **Configurable Interval Control:** Set millisecond-precision click intervals to match any application requirement.
-*   **Dynamic Targeting:** Built-in coordinates capture tool to lock clicks to specific UI elements regardless of window size.
-*   **Hotkey Integration:** Start and stop execution instantly using customizable keyboard shortcuts without losing focus on the target window.
-*   **Human-Mimicry Mode:** Optional randomization jitter to prevent detection in systems that monitor for perfect, rhythmic inputs.
+*   **Configurable CPS:** Precisely control clicks-per-second settings to mimic human interaction or maximize speed.
+*   **Dynamic Hotkeys:** Start or stop the automation sequence instantly using customizable global keyboard shortcuts.
+*   **Coordinate Targeting:** Optional screen coordinate locking to ensure clicks are performed at specific pixels.
+*   **Anti-Detection Layer:** Implements randomized jitter and interval variance to bypass basic rate-limiting mechanisms.
 
 ## Installation
 
@@ -23,20 +21,22 @@ pip install -r requirements.txt
 
 ## Usage
 
-To run the tool with default settings (100ms interval), execute:
+To start the autoclicker with default settings, execute the following command in your terminal:
 
 ```bash
-python main.py --interval 0.1
+python main.py --cps 10
 ```
 
-To enable the human-mimicry randomization feature with a 50ms variance:
+For advanced usage, you can define specific target coordinates and toggle the anti-detection mode:
 
 ```bash
-python main.py --interval 0.5 --randomize 0.05
+python main.py --cps 15 --x 500 --y 500 --jitter
 ```
 
-Once running, press `F8` to start the clicking process and `F9` to terminate the script immediately.
+Press `F6` (default) at any time to toggle the clicking state. Use `Ctrl+C` in the terminal to terminate the process.
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Distributed under the MIT License. See `LICENSE` for more information.
