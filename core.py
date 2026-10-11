@@ -1,34 +1,40 @@
-import pyautogui
 import time
-import random
+import logging
+import requests
+from functools import wraps
 
-def safe_click(x: int, y: int, interval: float = 0.1):
-    """Performs a click at specified coordinates with randomized delay."""
-    pyautogui.moveTo(x, y)
-    time.sleep(random.uniform(0.05, interval))
-    pyautogui.click()
+# Configure logger for automation-tool-12
+logger = logging.getLogger('automation-tool-12')
 
-def drag_and_drop(start_x: int, start_y: int, end_x: int, end_y: int, duration: float = 0.5):
-    """Simulates a drag motion between two points."""
-    pyautogui.moveTo(start_x, start_y)
-    pyautogui.dragTo(end_x, end_y, duration=duration, button='left')
+def retry_network_op(max_retries=3, delay=2):
+    """Decorator for retrying network operations with exponential backoff."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while attempts < max_retries:
+                try:
+                    return func(*args, **kwargs)
+                except (requests.RequestException, ConnectionError) as e:
+                    attempts += 1
+                    if attempts >= max_retries:
+                        logger.error(f"Final attempt failed for {func.__name__}: {e}")
+                        raise
+                    time.sleep(delay * attempts)
+        return wrapper
+    return decorator
 
-def batch_click(points: list, delay: float = 1.0):
-    """Executes a sequence of clicks defined by list of tuples."""
-    for x, y in points:
-        safe_click(x, y)
-        time.sleep(delay)
-
-def get_screen_center():
-    """Returns the center coordinates of the primary display."""
-    width, height = pyautogui.size()
-    return width // 2, height // 2
-
-def perform_double_click(x: int, y: int):
-    """Performs a double click operation at screen coordinates."""
-    pyautogui.doubleClick(x, y)
+@retry_network_op(max_retries=3, delay=1)
+def fetch_config_from_server(url):
+    """Simple helper to sync autoclicker configuration."""
+    response = requests.get(url, timeout=5)
+    response.raise_for_status()
+    return response.json()
 
 if __name__ == '__main__':
-    # Example usage: click the center of the screen
-    cx, cy = get_screen_center()
-    safe_click(cx, cy)
+    # Example usage in the autoclicker context
+    try:
+        config = fetch_config_from_server('http://api.local/config')
+        print(f"Loaded config: {config}")
+    except Exception as e:
+        print(f"Autoclicker initialization failed: {e}")
