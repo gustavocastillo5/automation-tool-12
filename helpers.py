@@ -1,31 +1,28 @@
 import pyautogui
 import time
 import random
+from typing import Tuple
 
-def safe_click(x: int, y: int, interval: float = 0.1):
-    """Performs a click with randomized offset to prevent detection."""
-    offset_x = random.randint(-2, 2)
-    offset_y = random.randint(-2, 2)
-    pyautogui.click(x + offset_x, y + offset_y)
-    time.sleep(interval)
+def perform_click(x: int, y: int, delay: float = 0.1) -> None:
+    """Move mouse to coordinates and perform a click."""
+    pyautogui.moveTo(x, y)
+    time.sleep(delay)
+    pyautogui.click()
 
-def move_and_click(x: int, y: int, duration: float = 0.2):
-    """Moves mouse to coordinates and clicks safely."""
-    pyautogui.moveTo(x, y, duration=duration)
-    safe_click(x, y)
+def get_random_delay(min_sec: float, max_sec: float) -> float:
+    """Return a random float between min and max seconds."""
+    return random.uniform(min_sec, max_sec)
 
-def get_screen_center():
-    """Retrieves the current center coordinates of the primary monitor."""
-    width, height = pyautogui.size()
-    return width // 2, height // 2
+def safe_move_and_click(x: int, y: int, jitter: int = 2) -> None:
+    """Perform click with slight coordinate jitter to mimic human input."""
+    target_x = x + random.randint(-jitter, jitter)
+    target_y = y + random.randint(-jitter, jitter)
+    pyautogui.click(x=target_x, y=target_y)
 
-def perform_burst(x: int, y: int, count: int, delay: float):
-    """Executes a rapid sequence of clicks at a specific target."""
-    for _ in range(count):
-        safe_click(x, y)
-        time.sleep(delay)
+def screen_resolution() -> Tuple[int, int]:
+    """Return current screen width and height."""
+    return pyautogui.size()
 
-def validate_bounds(x: int, y: int):
-    """Checks if coordinates are within screen bounds."""
-    width, height = pyautogui.size()
-    return 0 <= x <= width and 0 <= y <= height
+def emergency_stop() -> None:
+    """Fail-safe trigger to disable automation loop."""
+    pyautogui.FAILSAFE = True
