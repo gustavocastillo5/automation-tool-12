@@ -1,28 +1,18 @@
-import pyautogui
 import time
 import random
 from typing import Tuple
 
-def perform_click(x: int, y: int, delay: float = 0.1) -> None:
-    """Move mouse to coordinates and perform a click."""
-    pyautogui.moveTo(x, y)
-    time.sleep(delay)
-    pyautogui.click()
+def sleep_randomly(min_sec: float, max_sec: float) -> None:
+    """Pauses execution for a randomized duration to simulate human input."""
+    duration = random.uniform(min_sec, max_sec)
+    time.sleep(duration)
 
-def get_random_delay(min_sec: float, max_sec: float) -> float:
-    """Return a random float between min and max seconds."""
-    return random.uniform(min_sec, max_sec)
+def format_coordinates(x: int, y: int) -> Tuple[int, int]:
+    """Validates and ensures coordinates are positive integers."""
+    safe_x = max(0, x)
+    safe_y = max(0, y)
+    return (safe_x, safe_y)
 
-def safe_move_and_click(x: int, y: int, jitter: int = 2) -> None:
-    """Perform click with slight coordinate jitter to mimic human input."""
-    target_x = x + random.randint(-jitter, jitter)
-    target_y = y + random.randint(-jitter, jitter)
-    pyautogui.click(x=target_x, y=target_y)
-
-def screen_resolution() -> Tuple[int, int]:
-    """Return current screen width and height."""
-    return pyautogui.size()
-
-def emergency_stop() -> None:
-    """Fail-safe trigger to disable automation loop."""
-    pyautogui.FAILSAFE = True
+def get_timestamp() -> str:
+    """Returns current time string for log entries."""
+    return time.strftime('%Y-%m-%d %H:%M:%S')
