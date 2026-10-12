@@ -2,30 +2,29 @@ import json
 import os
 
 DEFAULT_CONFIG = {
-    "click_interval": 0.1,
+    "interval": 0.1,
     "button": "left",
-    "repeat_limit": 1000,
-    "hotkey": "f6"
+    "hotkey": "f6",
+    "repeat": True
 }
 
-def load_config(filepath: str) -> dict:
-    """Load configuration from json file or return defaults."""
+def load_config(filepath: str = "config.json") -> dict:
+    """Loads configuration from disk or returns defaults if missing."""
     if not os.path.exists(filepath):
-        save_config(filepath, DEFAULT_CONFIG)
+        save_config(DEFAULT_CONFIG, filepath)
         return DEFAULT_CONFIG
-
+    
     try:
-        with open(filepath, 'r') as f:
-            user_config = json.load(f)
-            # Merge user config with defaults to ensure keys exist
-            return {**DEFAULT_CONFIG, **user_config}
+        with open(filepath, "r") as f:
+            config = json.load(f)
+            return {**DEFAULT_CONFIG, **config}
     except (json.JSONDecodeError, IOError):
         return DEFAULT_CONFIG
 
-def save_config(filepath: str, config: dict) -> None:
-    """Persist configuration to disk."""
-    with open(filepath, 'w') as f:
-        json.dump(config, f, indent=4)
-
-# Instance for quick access in automation-tool-12
-settings = load_config("settings.json")
+def save_config(config: dict, filepath: str = "config.json") -> None:
+    """Persists current configuration state to local file."""
+    try:
+        with open(filepath, "w") as f:
+            json.dump(config, f, indent=4)
+    except IOError as e:
+        print(f"Failed to save configuration: {e}")
