@@ -1,29 +1,23 @@
-class ValidationError(Exception):
-    """Custom exception for input validation failures in automation-tool-12."""
-    pass
+def validate_click_settings(interval, duration):
+    """
+    Validates input ranges for click automation parameters.
+    Ensures interval is positive and duration is within bounds.
+    """
+    MIN_INTERVAL = 0.01
+    MAX_DURATION = 3600
 
-def validate_click_params(interval, iterations):
-    """
-    Validates input parameters for the main click loop.
-    Ensures interval is positive and iterations are non-negative.
-    """
-    if not isinstance(interval, (int, float)) or interval <= 0:
-        raise ValidationError(f"Invalid interval: {interval}. Must be a positive number.")
+    if not isinstance(interval, (int, float)) or interval < MIN_INTERVAL:
+        raise ValueError(f"Interval must be at least {MIN_INTERVAL} seconds")
     
-    if not isinstance(iterations, int) or iterations < 0:
-        raise ValidationError(f"Invalid iterations: {iterations}. Must be a non-negative integer.")
-    
+    if not isinstance(duration, (int, float)) or duration > MAX_DURATION:
+        raise ValueError(f"Duration cannot exceed {MAX_DURATION} seconds")
+        
     return True
 
-def sanitize_coordinates(x, y):
+def validate_coordinates(x, y, screen_width, screen_height):
     """
-    Validates screen coordinates for the autoclicker.
-    Ensures coordinates are within standard display bounds.
+    Checks if target coordinates are within screen boundaries.
     """
-    if not isinstance(x, int) or not isinstance(y, int):
-        raise ValidationError("Coordinates must be integers.")
-    
-    if x < 0 or y < 0:
-        raise ValidationError(f"Negative coordinates detected: ({x}, {y}).")
-    
-    return (x, y)
+    if not (0 <= x <= screen_width and 0 <= y <= screen_height):
+        raise ValueError("Target coordinates are outside screen dimensions")
+    return True
