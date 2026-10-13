@@ -1,18 +1,26 @@
 import time
-import random
+import pyautogui
 from typing import Tuple
 
-def sleep_randomly(min_sec: float, max_sec: float) -> None:
-    """Pauses execution for a randomized duration to simulate human input."""
-    duration = random.uniform(min_sec, max_sec)
-    time.sleep(duration)
+def move_and_click(x: int, y: int, button: str = 'left') -> None:
+    """Move mouse to coordinates and perform a click."""
+    pyautogui.moveTo(x, y)
+    pyautogui.click(button=button)
 
-def format_coordinates(x: int, y: int) -> Tuple[int, int]:
-    """Validates and ensures coordinates are positive integers."""
-    safe_x = max(0, x)
-    safe_y = max(0, y)
-    return (safe_x, safe_y)
+def get_mouse_position() -> Tuple[int, int]:
+    """Return current (x, y) coordinates of mouse."""
+    return pyautogui.position()
 
-def get_timestamp() -> str:
-    """Returns current time string for log entries."""
-    return time.strftime('%Y-%m-%d %H:%M:%S')
+def safe_sleep(seconds: float) -> None:
+    """Pause execution for the specified duration."""
+    if seconds > 0:
+        time.sleep(seconds)
+
+def check_screen_pixel(x: int, y: int, color: Tuple[int, int, int]) -> bool:
+    """Verify pixel color at specific coordinates."""
+    return pyautogui.pixelMatchesColor(x, y, color)
+
+def drag_to_location(x1: int, y1: int, x2: int, y2: int, duration: float = 0.5) -> None:
+    """Drag item from first coordinate to second."""
+    pyautogui.moveTo(x1, y1)
+    pyautogui.dragTo(x2, y2, duration=duration)
