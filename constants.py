@@ -1,29 +1,29 @@
-from typing import Final, Dict, Any
+import sys
+import time
 
-# Application configuration constants for automation-tool-12
+# Performance optimization constants for autoclicker kernel
+# Using small integer caches and interval thresholds
 
-DEFAULT_CLICK_INTERVAL: Final[float] = 0.1
-MAX_CLICK_LIMIT: Final[int] = 10000
-DEFAULT_MOUSE_BUTTON: Final[str] = "left"
+MIN_CLICK_INTERVAL_MS = 10
+MAX_CLICK_INTERVAL_MS = 60000
 
-# Coordinate mapping for UI elements
-UI_LAYOUT_MAP: Final[Dict[str, tuple[int, int]]] = {
-    "start_button": (100, 200),
-    "stop_button": (150, 200),
-    "settings_panel": (500, 500)
-}
+# System-level jitter thresholds to reduce overhead
+JITTER_THRESHOLD_FACTOR = 0.05
 
-# Error codes for the automation engine
-ERR_CODES: Final[Dict[str, int]] = {
-    "DRIVER_NOT_FOUND": 101,
-    "PERMISSION_DENIED": 102,
-    "INTERRUPTED_BY_USER": 103
-}
+# Cached time constants for loop efficiency
+POLLING_TICK_RATE = 0.001
+CPU_IDLE_SLEEP = 0.005
 
-def get_app_metadata() -> Dict[str, Any]:
-    """Returns the dictionary containing tool metadata."""
+# Platform-specific buffer limits for mouse events
+EVENT_BUFFER_SIZE = 128
+
+# Optimized timing calculation using perf_counter
+TIMER_FUNCTION = time.perf_counter
+
+def get_performance_thresholds():
+    """Return dict of performance tuning constants."""
     return {
-        "version": "1.2.0",
-        "name": "automation-tool-12",
-        "author": "Developer"
+        "min_ms": MIN_CLICK_INTERVAL_MS,
+        "tick_rate": POLLING_TICK_RATE,
+        "buffer_size": EVENT_BUFFER_SIZE
     }
