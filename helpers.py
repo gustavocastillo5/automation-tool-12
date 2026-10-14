@@ -1,26 +1,29 @@
-import time
 import pyautogui
-from typing import Tuple
+import time
+import random
 
-def move_and_click(x: int, y: int, button: str = 'left') -> None:
-    """Move mouse to coordinates and perform a click."""
+def perform_click(x: int, y: int, interval: float = 0.05):
+    """Move mouse to coordinates and execute click."""
     pyautogui.moveTo(x, y)
-    pyautogui.click(button=button)
+    pyautogui.click()
+    time.sleep(interval)
 
-def get_mouse_position() -> Tuple[int, int]:
-    """Return current (x, y) coordinates of mouse."""
-    return pyautogui.position()
+def random_jitter(x: int, y: int, range_px: int = 5) -> tuple:
+    """Add random noise to coordinates for human-like movement."""
+    dx = random.randint(-range_px, range_px)
+    dy = random.randint(-range_px, range_px)
+    return (x + dx, y + dy)
 
-def safe_sleep(seconds: float) -> None:
-    """Pause execution for the specified duration."""
-    if seconds > 0:
-        time.sleep(seconds)
+def safe_exit_check(key: str = 'q') -> bool:
+    """Check if user requested program termination."""
+    if pyautogui.getActiveWindow() and pyautogui.key_down(key):
+        return True
+    return False
 
-def check_screen_pixel(x: int, y: int, color: Tuple[int, int, int]) -> bool:
-    """Verify pixel color at specific coordinates."""
-    return pyautogui.pixelMatchesColor(x, y, color)
+def human_delay(min_sec: float = 0.1, max_sec: float = 0.5):
+    """Sleep for a random duration to simulate human reaction."""
+    time.sleep(random.uniform(min_sec, max_sec))
 
-def drag_to_location(x1: int, y1: int, x2: int, y2: int, duration: float = 0.5) -> None:
-    """Drag item from first coordinate to second."""
-    pyautogui.moveTo(x1, y1)
-    pyautogui.dragTo(x2, y2, duration=duration)
+def get_screen_size() -> tuple:
+    """Return tuple of current display resolution."""
+    return pyautogui.size()
