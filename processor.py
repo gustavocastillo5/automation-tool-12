@@ -1,75 +1,32 @@
-import logging
-import time
-from typing import Dict, List, Tuple, Union
+import json
+import os
+from typing import Dict, Any, Optional
 
-logger = logging.getLogger("autoclicker.processor")
+class ClickDataHandler:
+    def __init__(self, storage_path: str = "data.json"):
+        self.storage_path = storage_path
 
+    def load_configuration(self) -> Dict[str, Any]:
+        if not os.path.exists(self.storage_path):
+            return {"interval": 0.1, "button": "left", "repeats": 0}
+        
+        try:
+            with open(self.storage_path, "r") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return {}
 
-class ScreenBoundsError(ValueError):
-    """Raised when coordinates fall outside allowed physical or safety bounds."""
-    pass
-
-
-class ClickProcessor:
-    """Manages the validation and safe execution of automated clicks."""
-
-    def __init__(self, screen_resolution: Tuple[int, int], safety_margin: int = 10):
-        self.width, self.height = screen_resolution
-        self.safety_margin = safety_margin
-        self.is_running = False
-
-    def validate_coordinates(self, x: int, y: int) -> bool:
-        """Validates if coordinates are within safe screen boundaries."""
-        if x < self.safety_margin or x > (self.width - self.safety_margin):
+    def save_configuration(self, data: Dict[str, Any]) -> bool:
+        try:
+            with open(self.storage_path, "w") as f:
+                json.dump(data, f, indent=4)
+            return True
+        except IOError:
             return False
-        if y < self.safety_margin or y > (self.height - self.safety_margin):
-            return False
-        if x <= self.safety_margin and y <= self.safety_margin:
-            return False
-        return True
 
-    def process_click_queue(
-        self, clicks: List[Tuple[int, int, float]]
-    ) -> Dict[str, Union[int, List[str]]]:
-        """Processes a queue of clicks with safe boundary checks and delays."""
-        self.is_running = True
-        processed_count = 0
-        errors = []
+    def validate_settings(self, settings: Dict[str, Any]) -> bool:
+        required = {"interval", "button", "repeats"}
+        return all(key in settings for key in required) and settings["interval"] > 0
 
-        for index, click_event in enumerate(clicks):
-            if not self.is_running:
-                logger.info("Processing halted by safety event.")
-                break
-
-            try:
-                if len(click_event) != 3:
-                    raise ValueError(
-                        f"Malformed click data at index {index}. Expected (x, y, delay)."
-                    )
-
-                x, y, delay = click_event
-
-                if not self.validate_coordinates(x, y):
-                    raise ScreenBoundsError(
-                        f"Click coordinate ({x}, {y}) violates safety margins."
-                    )
-
-                if delay < 0.0:
-                    raise ValueError(f"Negative delay {delay}s is not permitted.")
-
-                logger.debug(f"Executing simulated click at ({x}, {y})")
-                time.sleep(delay)
-                processed_count += 1
-
-            except (ScreenBoundsError, ValueError) as err:
-                error_msg = f"Event {index} skipped: {str(err)}"
-                logger.error(error_msg)
-                errors.append(error_msg)
-            except Exception as unexpected_err:
-                error_msg = f"Unexpected system error at event {index}: {str(unexpected_err)}"
-                logger.critical(error_msg)
-                errors.append(error_msg)
-                self.is_running = False
-
-        self.is_running = False
-        return {"processed": processed_count, "errors": errors}
+def get_default_settings() -> Dict[str, Any]:
+    return {"interval": 0.5, "button": "left", "repeats": 10}
