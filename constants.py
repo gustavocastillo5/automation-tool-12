@@ -1,40 +1,29 @@
-import sys
-from enum import Enum, unique
+from typing import Final, Dict, Any
 
+# Application configuration constants for automation-tool-12
 
-@unique
-class ClickButton(str, Enum):
-    """Mouse buttons supported by the autoclicker."""
+DEFAULT_CLICK_INTERVAL: Final[float] = 0.1
+MAX_CLICK_LIMIT: Final[int] = 10000
+DEFAULT_MOUSE_BUTTON: Final[str] = "left"
 
-    LEFT = "left"
-    RIGHT = "right"
-    MIDDLE = "middle"
+# Coordinate mapping for UI elements
+UI_LAYOUT_MAP: Final[Dict[str, tuple[int, int]]] = {
+    "start_button": (100, 200),
+    "stop_button": (150, 200),
+    "settings_panel": (500, 500)
+}
 
+# Error codes for the automation engine
+ERR_CODES: Final[Dict[str, int]] = {
+    "DRIVER_NOT_FOUND": 101,
+    "PERMISSION_DENIED": 102,
+    "INTERRUPTED_BY_USER": 103
+}
 
-@unique
-class ClickType(str, Enum):
-    """Click actions supported by the engine."""
-
-    SINGLE = "single"
-    DOUBLE = "double"
-    HOLD = "hold"
-
-
-# Timing and execution defaults
-DEFAULT_DELAY_SECONDS = 0.1
-DEFAULT_INTERVAL_SECONDS = 1.0
-DEFAULT_CLICK_COUNT = 0  # Zero represents infinite loops
-
-# Default keyboard control hotkeys
-DEFAULT_START_HOTKEY = "f6"
-DEFAULT_STOP_HOTKEY = "f7"
-DEFAULT_EXIT_HOTKEY = "f8"
-
-# Safe operational boundaries to prevent thread locking
-MIN_DELAY_LIMIT = 0.001
-MAX_DELAY_LIMIT = 86400.0  # 24 hours
-
-# Operating system flags
-IS_WINDOWS = sys.platform == "win32"
-IS_MACOS = sys.platform == "darwin"
-IS_LINUX = sys.platform.startswith("linux")
+def get_app_metadata() -> Dict[str, Any]:
+    """Returns the dictionary containing tool metadata."""
+    return {
+        "version": "1.2.0",
+        "name": "automation-tool-12",
+        "author": "Developer"
+    }
