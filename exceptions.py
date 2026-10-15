@@ -1,24 +1,30 @@
-from typing import Optional
-
 class AutomationError(Exception):
-    """Base exception class for automation-tool-12."""
-    def __init__(self, message: str, code: Optional[int] = None) -> None:
-        super().__init__(message)
-        self.code = code
+    """Base exception for automation-tool-12."""
+    pass
 
 class ClickerConfigurationError(AutomationError):
-    """Raised when the autoclicker configuration is invalid."""
+    """Raised when clicker parameters are invalid."""
     pass
 
-class ExecutionTimeoutError(AutomationError):
-    """Raised when an automation task exceeds its time limit."""
+class CoordinateOutOfBoundsError(AutomationError):
+    """Raised when coordinates fall outside screen bounds."""
     pass
 
-class InputDeviceNotFoundError(AutomationError):
-    """Raised when the mouse or keyboard hardware is missing."""
+class ExecutionInterruptedError(AutomationError):
+    """Raised when an automation cycle is manually stopped."""
     pass
 
-class ClickerInterruptError(AutomationError):
-    """Raised when the user manually cancels an active task."""
-    def __init__(self, message: str = "Task execution interrupted by user") -> None:
-        super().__init__(message, code=403)
+class HardwareInteractionError(AutomationError):
+    """Raised when input simulation fails."""
+    pass
+
+def validate_coordinate(x: int, y: int, screen_width: int, screen_height: int) -> None:
+    """Ensure coordinates are within display boundaries."""
+    if not (0 <= x < screen_width and 0 <= y < screen_height):
+        raise CoordinateOutOfBoundsError(f"Coordinates ({x}, {y}) out of screen bounds.")
+
+def handle_automation_error(e: Exception) -> str:
+    """Format exception messages for tool logging."""
+    if isinstance(e, AutomationError):
+        return f"[AUTOMATION ERROR]: {str(e)}"
+    return f"[UNKNOWN ERROR]: {str(e)}"
