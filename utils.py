@@ -1,27 +1,39 @@
-import json
-import os
-from typing import Any, Dict
+import time
+import functools
+import logging
+from typing import Callable, Any, Tuple, Type
 
-def load_click_config(filepath: str) -> Dict[str, Any]:
-    """Loads autoclicker settings from a JSON file."""
-    if not os.path.exists(filepath):
-        return {"interval": 0.1, "button": "left", "repeat": 0}
-    
-    with open(filepath, 'r') as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return {}
+logger = logging.getLogger(__name__)
 
-def save_click_config(filepath: str, data: Dict[str, Any]) -> None:
-    """Saves autoclicker settings to a JSON file."""
-    with open(filepath, 'w') as f:
-        json.dump(data, f, indent=4)
-
-def validate_coordinates(coords: Dict[str, int]) -> bool:
-    """Ensures x and y coordinates are positive integers."""
-    return all(isinstance(v, int) and v >= 0 for v in coords.values())
-
-def format_log_entry(action: str, status: str) -> str:
-    """Creates a formatted string for tool logging."""
-    return f"[ACTION: {action.upper()}] Status: {status}"
+def retry_network_op(
+    max_retries: int = 3,
+    initial_delay: float = 1.0,
+    backoff_factor: float = 2.0,
+    retryable_exceptions: Tuple[Type[Exception], ...] = (Exception,)
+) -> Callable:
+    """
+    Decorator to retry network requests with exponential backoff.
+    Used for syncing autoclicker configuration profiles and online hooks.
+    """
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            current_delay = initial_delay
+            for attempt in range(1, max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except retryable_exceptions as err:
+                    if attempt == max_retries:
+                        logger.error(
+                            f"Operation '{func.__name__}' failed after {max_retries} attempts: {err}"
+                        )
+                        raise
+                    
+                    logger.warning(
+                        f"Network operation '{func.__name__}' failed (Attempt {attempt}/{max_retries}): {err}. "
+                        f"Retrying in {current_delay:.2f}s..."
+                    )
+                    time.sleep(current_delay)
+                    current_delay *= backoff_factor
+        return wrapper
+    return decorator
