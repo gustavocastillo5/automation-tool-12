@@ -1,29 +1,46 @@
-import pyautogui
 import time
-import random
+import pyautogui
+from typing import Tuple, Optional
 
-def perform_click(x: int, y: int, interval: float = 0.05):
-    """Move mouse to coordinates and execute click."""
-    pyautogui.moveTo(x, y)
-    pyautogui.click()
-    time.sleep(interval)
-
-def random_jitter(x: int, y: int, range_px: int = 5) -> tuple:
-    """Add random noise to coordinates for human-like movement."""
-    dx = random.randint(-range_px, range_px)
-    dy = random.randint(-range_px, range_px)
-    return (x + dx, y + dy)
-
-def safe_exit_check(key: str = 'q') -> bool:
-    """Check if user requested program termination."""
-    if pyautogui.getActiveWindow() and pyautogui.key_down(key):
+def perform_click(x: int, y: int, interval: float = 0.1) -> bool:
+    """
+    Executes a mouse click at specified coordinates with a delay.
+    
+    Args:
+        x: The horizontal screen coordinate.
+        y: The vertical screen coordinate.
+        interval: Time to wait after clicking.
+        
+    Returns:
+        bool: True if click was successful, False otherwise.
+    """
+    try:
+        pyautogui.click(x=x, y=y)
+        time.sleep(interval)
         return True
-    return False
+    except pyautogui.FailSafeException:
+        return False
 
-def human_delay(min_sec: float = 0.1, max_sec: float = 0.5):
-    """Sleep for a random duration to simulate human reaction."""
-    time.sleep(random.uniform(min_sec, max_sec))
+def get_screen_center() -> Tuple[int, int]:
+    """
+    Calculates the center point of the primary display.
+    
+    Returns:
+        Tuple[int, int]: X and Y coordinates of the screen center.
+    """
+    width, height = pyautogui.size()
+    return (width // 2, height // 2)
 
-def get_screen_size() -> tuple:
-    """Return tuple of current display resolution."""
-    return pyautogui.size()
+def validate_coordinates(x: int, y: int) -> bool:
+    """
+    Checks if coordinates are within current screen bounds.
+    
+    Args:
+        x: X coordinate to validate.
+        y: Y coordinate to validate.
+        
+    Returns:
+        bool: True if valid, False if outside bounds.
+    """
+    width, height = pyautogui.size()
+    return 0 <= x < width and 0 <= y < height
