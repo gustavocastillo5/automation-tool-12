@@ -1,32 +1,29 @@
-import json
-import os
-from typing import Dict, Any, Optional
+import time
+import pyautogui
+import random
 
-class ClickDataHandler:
-    def __init__(self, storage_path: str = "data.json"):
-        self.storage_path = storage_path
+def execute_click(x, y, interval=0.1):
+    """Perform a mouse click at coordinates with a small delay."""
+    pyautogui.click(x, y)
+    time.sleep(interval)
 
-    def load_configuration(self) -> Dict[str, Any]:
-        if not os.path.exists(self.storage_path):
-            return {"interval": 0.1, "button": "left", "repeats": 0}
-        
-        try:
-            with open(self.storage_path, "r") as f:
-                return json.load(f)
-        except (json.JSONDecodeError, IOError):
-            return {}
+def execute_drag(start_x, start_y, end_x, end_y, duration=0.5):
+    """Perform a drag action between two points."""
+    pyautogui.moveTo(start_x, start_y)
+    pyautogui.dragTo(end_x, end_y, duration=duration, button='left')
 
-    def save_configuration(self, data: Dict[str, Any]) -> bool:
-        try:
-            with open(self.storage_path, "w") as f:
-                json.dump(data, f, indent=4)
-            return True
-        except IOError:
-            return False
+def jitter_coordinates(x, y, range_px=5):
+    """Add random noise to coordinates to avoid detection."""
+    new_x = x + random.randint(-range_px, range_px)
+    new_y = y + random.randint(-range_px, range_px)
+    return new_x, new_y
 
-    def validate_settings(self, settings: Dict[str, Any]) -> bool:
-        required = {"interval", "button", "repeats"}
-        return all(key in settings for key in required) and settings["interval"] > 0
+def safe_sleep(min_sec, max_sec):
+    """Sleep for a random duration to mimic human behavior."""
+    duration = random.uniform(min_sec, max_sec)
+    time.sleep(duration)
 
-def get_default_settings() -> Dict[str, Any]:
-    return {"interval": 0.5, "button": "left", "repeats": 10}
+def perform_human_click(x, y, variation=3):
+    """Execute a click with jitter for human-like interaction."""
+    jx, jy = jitter_coordinates(x, y, variation)
+    execute_click(jx, jy)
