@@ -1,37 +1,48 @@
 import json
-import os
+from pathlib import Path
+from typing import Any, Dict
 
-DEFAULT_CONFIG = {
-    "click_interval": 0.1,
-    "button": "left",
-    "hotkey": "f6",
-    "repeat_count": 0
+DEFAULT_CONFIG: Dict[str, Any] = {
+    "click_interval": 0.1,  # Delay between clicks in seconds
+    "mouse_button": "left",  # 'left', 'right', or 'middle'
+    "click_type": "single",  # 'single' or 'double'
+    "hotkey": "f6",  # Toggle start/stop hotkey
+    "max_clicks": 0,  # 0 for unlimited clicks
+    "randomize_interval": False,  # Add jitter to avoid detection
+    "jitter_range": 0.02,  # Interval variation range
 }
 
+
 class ConfigLoader:
-    """Handles loading and persistence of tool configuration."""
-    def __init__(self, config_path="config.json"):
-        self.path = config_path
-        self.config = self._load_or_create()
+    """Handles loading, saving, and merging autoclicker configuration settings."""
 
-    def _load_or_create(self):
-        """Loads config from disk or returns defaults."""
-        if not os.path.exists(self.path):
-            self._save(DEFAULT_CONFIG)
-            return DEFAULT_CONFIG
-        
+    def __init__(self, config_path: str = "config.json"):
+        self.config_path = Path(config_path)
+        self.config = self.load_config()
+
+    def load_config(self) -> Dict[str, Any]:
+        """Loads configuration from disk, writing standard defaults if file is absent."""
+        if not self.config_path.exists():
+            self.save_config(DEFAULT_CONFIG)
+            return DEFAULT_CONFIG.copy()
+
         try:
-            with open(self.path, "r") as f:
-                data = json.load(f)
-                # Ensure all default keys exist if file is outdated
-                return {**DEFAULT_CONFIG, **data}
-        except (json.JSONDecodeError, IOError):
-            return DEFAULT_CONFIG
+            with open(self.config_path, "r", encoding="utf-8") as f:
+                loaded_config = json.load(f)
 
-    def _save(self, data):
-        """Persists current configuration to json file."""
-        with open(self.path, "w") as f:
-            json.dump(data, f, indent=4)
+            # Merge loaded values over defaults to handle missing keys
+            config = DEFAULT_CONFIG.copy()
+            config.update(loaded_config)
+            return config
+        except (json.JSONDecodeError, OSError):
+            # Return standard fallback configuration if file reading fails
+            return DEFAULT_CONFIG.copy()
 
-    def get(self, key):
-        return self.config.get(key, DEFAULT_CONFIG.get(key))
+    def save_config(self, config_data: Dict[str, Any]) -> None:
+        """Persists current configuration options to the JSON file."""
+        with open(self.config_path, "w", encoding="utf-8") as f:
+            json.dump(config_data, f, indent=4)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Retrieves a specific setting value by key."""
+        return self.config.get(key, default)
