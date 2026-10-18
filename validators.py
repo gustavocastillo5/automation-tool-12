@@ -1,23 +1,67 @@
-def validate_click_settings(interval, duration):
-    """
-    Validates input ranges for click automation parameters.
-    Ensures interval is positive and duration is within bounds.
-    """
-    MIN_INTERVAL = 0.01
-    MAX_DURATION = 3600
+"""Validation utilities for autoclicker configuration parameters."""
 
-    if not isinstance(interval, (int, float)) or interval < MIN_INTERVAL:
-        raise ValueError(f"Interval must be at least {MIN_INTERVAL} seconds")
-    
-    if not isinstance(duration, (int, float)) or duration > MAX_DURATION:
-        raise ValueError(f"Duration cannot exceed {MAX_DURATION} seconds")
-        
-    return True
+from typing import Optional, Tuple, Union
 
-def validate_coordinates(x, y, screen_width, screen_height):
+
+def validate_cps(cps: Union[int, float]) -> float:
+    """Validate clicks per second (CPS) setting.
+
+    Args:
+        cps: Target clicks per second.
+
+    Returns:
+        Validated CPS as a float.
+
+    Raises:
+        ValueError: If CPS is outside the allowed range (0.1 to 1000.0).
     """
-    Checks if target coordinates are within screen boundaries.
+    cps_float = float(cps)
+    if not (0.1 <= cps_float <= 1000.0):
+        raise ValueError("CPS must be between 0.1 and 1000.0")
+    return cps_float
+
+
+def validate_coordinates(
+    coords: Optional[Tuple[int, int]],
+    screen_bounds: Tuple[int, int] = (1920, 1080),
+) -> Optional[Tuple[int, int]]:
+    """Validate target screen coordinates.
+
+    Args:
+        coords: (x, y) coordinate tuple or None for dynamic cursor position.
+        screen_bounds: (width, height) boundary tuple.
+
+    Returns:
+        Validated (x, y) coordinate tuple or None.
+
+    Raises:
+        ValueError: If coordinates are out of screen bounds.
     """
-    if not (0 <= x <= screen_width and 0 <= y <= screen_height):
-        raise ValueError("Target coordinates are outside screen dimensions")
-    return True
+    if coords is None:
+        return None
+
+    x, y = coords
+    max_x, max_y = screen_bounds
+    if x < 0 or y < 0 or x > max_x or y > max_y:
+        raise ValueError(
+            f"Coordinates ({x}, {y}) out of screen bounds {screen_bounds}"
+        )
+    return int(x), int(y)
+
+
+def validate_click_count(count: int) -> int:
+    """Validate total click target count.
+
+    Args:
+        count: Number of clicks to perform (0 for infinite).
+
+    Returns:
+        Validated click count as an integer.
+
+    Raises:
+        ValueError: If count is negative.
+    """
+    count_int = int(count)
+    if count_int < 0:
+        raise ValueError("Click count cannot be negative")
+    return count_int
