@@ -2,28 +2,26 @@ class AutomationError(Exception):
     """Base exception for automation-tool-12."""
     pass
 
-class ClickerConfigurationError(AutomationError):
-    """Raised when config parameters are invalid."""
+class ClickerNotFoundError(AutomationError):
+    """Raised when the target coordinate is unreachable."""
     pass
 
-class CoordinateOutOfBoundsError(AutomationError):
-    """Raised when mouse clicks fall outside screen bounds."""
+class RateLimitExceeded(AutomationError):
+    """Raised when input events exceed OS safety limits."""
     pass
 
-class DeviceInterfaceError(AutomationError):
-    """Raised when input device handles are unreachable."""
+class ConfigurationError(AutomationError):
+    """Raised when the user provides invalid parameters."""
     pass
 
-class ExecutionTimeoutError(AutomationError):
-    """Raised when an operation exceeds time limits."""
-    pass
+def validate_coordinates(x: int, y: int):
+    """Validates screen boundaries for click events."""
+    if x < 0 or y < 0:
+        raise ConfigurationError(f"Invalid coordinates: ({x}, {y})")
 
-def validate_bounds(x: int, y: int, screen_width: int, screen_height: int):
-    """Checks if coordinate pair is within display resolution."""
-    if not (0 <= x <= screen_width and 0 <= y <= screen_height):
-        raise CoordinateOutOfBoundsError(f"Coordinates ({x}, {y}) outside resolution {screen_width}x{screen_height}")
-
-def handle_device_failure(error: Exception):
-    """Centralized diagnostic for hardware communication issues."""
-    # Log the failure and re-raise as custom device error
-    raise DeviceInterfaceError(f"System hardware unreachable: {str(error)}")
+def handle_automation_exception(e: Exception):
+    """Centralized error reporter for the main loop."""
+    if isinstance(e, AutomationError):
+        print(f"[!] Automation issue detected: {e}")
+    else:
+        print(f"[!] Critical system failure: {e}")
