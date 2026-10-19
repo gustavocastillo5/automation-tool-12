@@ -1,55 +1,39 @@
-import functools
-import logging
 import time
-from typing import Any, Callable, Tuple, Type
+import logging
+from functools import wraps
+from typing import Callable, Any, Type, Tuple
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("autoclicker.utils")
 
-
-def retry_on_exception(
+def retry_network_op(
     max_retries: int = 3,
     delay: float = 1.0,
-    backoff: float = 2.0,
+    backoff_factor: float = 2.0,
     exceptions: Tuple[Type[Exception], ...] = (Exception,)
 ) -> Callable:
     """
-    Decorator that retries a function if specified exceptions occur.
-    Applies exponential backoff delay between retry attempts.
+    Decorator that retries network operations with exponential backoff.
+    Useful for fetching remote autoclicker presets or checking license keys.
     """
     def decorator(func: Callable) -> Callable:
-        @functools.wraps(func)
+        @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             current_delay = delay
             for attempt in range(1, max_retries + 1):
                 try:
                     return func(*args, **kwargs)
-                except exceptions as err:
+                except exceptions as exc:
                     if attempt == max_retries:
                         logger.error(
-                            "Operation '%s' failed after %d retries. Error: %s",
-                            func.__name__, max_retries, err
+                            f"Network call '{func.__name__}' failed after {max_retries} attempts: {exc}"
                         )
                         raise
                     
                     logger.warning(
-                        "Attempt %d/%d for '%s' failed (%s). Retrying in %.1fs...",
-                        attempt, max_retries, func.__name__, err, current_delay
+                        f"Attempt {attempt}/{max_retries} for '{func.__name__}' failed: {exc}. "
+                        f"Retrying in {current_delay:.2f}s..."
                     )
                     time.sleep(current_delay)
-                    current_delay *= backoff
-            return None
-
+                    current_delay *= backoff_factor
         return wrapper
     return decorator
-
-
-def execute_with_retry(
-    func: Callable,
-    *args: Any,
-    max_retries: int = 3,
-    delay: float = 1.0,
-    **kwargs: Any
-) -> Any:
-    """Helper function to execute a callable directly with retry logic."""
-    retry_wrapper = retry_on_exception(max_retries=max_retries, delay=delay)
-    return retry_wrapper(func)(*args, **kwargs)
