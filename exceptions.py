@@ -1,27 +1,31 @@
 class AutomationError(Exception):
-    """Base exception for automation-tool-12."""
+    """Base exception class for automation-tool-12."""
     pass
 
-class ClickerNotFoundError(AutomationError):
-    """Raised when the target coordinate is unreachable."""
-    pass
 
-class RateLimitExceeded(AutomationError):
-    """Raised when input events exceed OS safety limits."""
-    pass
+class ClickerConfigurationError(AutomationError):
+    """Raised when the configuration file is invalid or missing."""
+    def __init__(self, message: str, config_path: str) -> None:
+        self.config_path: str = config_path
+        super().__init__(f"{message} (path: {config_path})")
 
-class ConfigurationError(AutomationError):
-    """Raised when the user provides invalid parameters."""
-    pass
 
-def validate_coordinates(x: int, y: int):
-    """Validates screen boundaries for click events."""
-    if x < 0 or y < 0:
-        raise ConfigurationError(f"Invalid coordinates: ({x}, {y})")
+class InputDeviceError(AutomationError):
+    """Raised when mouse or keyboard control fails."""
+    def __init__(self, device: str, details: str) -> None:
+        self.device: str = device
+        super().__init__(f"failed to interact with {device}: {details}")
 
-def handle_automation_exception(e: Exception):
-    """Centralized error reporter for the main loop."""
-    if isinstance(e, AutomationError):
-        print(f"[!] Automation issue detected: {e}")
-    else:
-        print(f"[!] Critical system failure: {e}")
+
+class ExecutionTimeoutError(AutomationError):
+    """Raised when an automation task exceeds its runtime limit."""
+    def __init__(self, task_name: str, duration: float) -> None:
+        self.task_name: str = task_name
+        super().__init__(f"task {task_name} timed out after {duration} seconds")
+
+
+class PermissionDeniedError(AutomationError):
+    """Raised when the tool lacks necessary OS privileges."""
+    def __init__(self, requirement: str) -> None:
+        self.requirement: str = requirement
+        super().__init__(f"insufficient permissions for: {requirement}")
