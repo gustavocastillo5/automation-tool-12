@@ -5,29 +5,25 @@ from typing import Any, Dict
 DEFAULT_CONFIG = {
     "interval": 0.1,
     "button": "left",
-    "max_clicks": 1000,
+    "repeat": 0,
     "hotkey": "f6"
 }
 
 def load_config(filepath: str = "config.json") -> Dict[str, Any]:
-    """Loads configuration from JSON or returns defaults."""
+    """Loads configuration from file or returns defaults if missing."""
     if not os.path.exists(filepath):
-        return DEFAULT_CONFIG.copy()
+        save_config(DEFAULT_CONFIG, filepath)
+        return DEFAULT_CONFIG
     
     try:
         with open(filepath, "r") as f:
-            user_config = json.load(f)
-            # Merge user config with defaults
-            config = DEFAULT_CONFIG.copy()
-            config.update(user_config)
-            return config
+            config = json.load(f)
+            # Ensure defaults for any missing keys in custom config
+            return {**DEFAULT_CONFIG, **config}
     except (json.JSONDecodeError, IOError):
-        return DEFAULT_CONFIG.copy()
+        return DEFAULT_CONFIG
 
 def save_config(config: Dict[str, Any], filepath: str = "config.json") -> None:
-    """Persists current configuration to JSON file."""
-    try:
-        with open(filepath, "w") as f:
-            json.dump(config, f, indent=4)
-    except IOError as e:
-        print(f"Failed to save configuration: {e}")
+    """Persists current configuration to a JSON file."""
+    with open(filepath, "w") as f:
+        json.dump(config, f, indent=4)
