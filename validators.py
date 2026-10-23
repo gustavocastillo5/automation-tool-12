@@ -1,32 +1,35 @@
-def validate_click_params(clicks: int, interval: float) -> bool:
-    """
-    validates input parameters for the autoclicker loop
-    returns true if parameters are within operational bounds
-    """
-    try:
-        if not isinstance(clicks, int) or clicks <= 0:
-            return False
-        if not isinstance(interval, (int, float)) or interval < 0.01:
-            return False
-        return True
-    except (TypeError, ValueError):
-        return False
+import time
+import functools
+import logging
 
-def sanitize_coordinates(x: int, y: int, screen_width: int, screen_height: int) -> tuple[int, int]:
-    """
-    ensures click coordinates remain within active monitor boundaries
-    returns clamped (x, y) coordinates
-    """
-    valid_x = max(0, min(x, screen_width))
-    valid_y = max(0, min(y, screen_height))
-    return (valid_x, valid_y)
+# Setup basic logger for automation-tool-12
+logger = logging.getLogger('automation-tool-12')
 
-def validate_user_input(user_data: dict) -> bool:
+def retry_network_operation(retries=3, delay=2, exceptions=(ConnectionError, TimeoutError)):
     """
-    full schema validation for automation tool input settings
+    Decorator to retry network-bound operations upon failure.
     """
-    required_keys = {'clicks', 'interval', 'x', 'y'}
-    if not all(key in user_data for key in required_keys):
-        return False
-    
-    return validate_click_params(user_data['clicks'], user_data['interval'])
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(retries):
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    last_exception = e
+                    logger.warning(f"Attempt {attempt + 1} failed: {e}. Retrying in {delay}s...")
+                    time.sleep(delay)
+            
+            logger.error(f"Operation {func.__name__} failed after {retries} attempts.")
+            raise last_exception
+        return wrapper
+    return decorator
+
+@retry_network_operation(retries=3, delay=1)
+def validate_server_connection(endpoint):
+    """
+    Sample network validation using retry decorator.
+    """
+    # In a real scenario, this performs an actual request
+    return True
