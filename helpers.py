@@ -1,29 +1,26 @@
 import time
-import random
 import pyautogui
+import random
 
-def safe_click(x: int, y: int, interval: float = 0.1):
-    """Performs a mouse click with a small safety delay."""
+def perform_click(x, y, interval=(0.1, 0.3)):
+    """Moves mouse and performs a click with jittery delay."""
     pyautogui.moveTo(x, y)
-    time.sleep(interval)
+    time.sleep(random.uniform(*interval))
     pyautogui.click()
 
-def human_delay(min_sec: float = 0.5, max_sec: float = 2.0):
-    """Introduces a random delay to simulate human behavior."""
-    delay = random.uniform(min_sec, max_sec)
-    time.sleep(delay)
+def get_screen_bounds():
+    """Returns current screen resolution dimensions."""
+    return pyautogui.size()
 
-def get_screen_center() -> tuple:
-    """Returns the center coordinates of the primary display."""
-    width, height = pyautogui.size()
-    return (width // 2, height // 2)
-
-def perform_drag(start_x: int, start_y: int, end_x: int, end_y: int):
-    """Drags the mouse between two points."""
-    pyautogui.moveTo(start_x, start_y)
-    pyautogui.dragTo(end_x, end_y, duration=0.5)
-
-def validate_coordinates(x: int, y: int) -> bool:
-    """Checks if coordinates are within screen boundaries."""
-    width, height = pyautogui.size()
+def is_within_bounds(x, y, width, height):
+    """Validates if coordinates are inside screen area."""
     return 0 <= x <= width and 0 <= y <= height
+
+def safe_exit(message="Exiting automation tool..."):
+    """Prints status and stops execution flow."""
+    print(message)
+    exit(0)
+
+def random_delay(min_sec=0.5, max_sec=2.0):
+    """Pauses execution for a random interval."""
+    time.sleep(random.uniform(min_sec, max_sec))
