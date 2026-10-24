@@ -1,34 +1,39 @@
-import json
-import os
-from typing import Dict, Any
+import random
+from typing import List, Dict, Tuple, Any
 
-def load_click_config(file_path: str) -> Dict[str, Any]:
-    """Loads autoclicker parameters from a local JSON file."""
-    if not os.path.exists(file_path):
-        return {"interval": 0.1, "button": "left", "repeats": 100}
-    
-    try:
-        with open(file_path, 'r') as f:
-            return json.load(f)
-    except (json.JSONDecodeError, IOError) as e:
-        print(f"Error reading config: {e}")
-        return {}
 
-def save_click_config(file_path: str, data: Dict[str, Any]) -> bool:
-    """Persists autoclicker state to disk for future runs."""
-    try:
-        with open(file_path, 'w') as f:
-            json.dump(data, f, indent=4)
-        return True
-    except IOError as e:
-        print(f"Error saving config: {e}")
-        return False
+def cps_to_interval(cps: float) -> float:
+    """Convert clicks per second (CPS) to time interval in seconds."""
+    if cps <= 0:
+        raise ValueError("CPS must be greater than zero.")
+    return 1.0 / cps
 
-def validate_coordinates(x: int, y: int) -> bool:
-    """Ensures screen coordinates are within valid range."""
-    return isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0
 
-def format_click_stats(clicks: int, duration: float) -> str:
-    """Calculates and formats simple performance metrics."""
-    cps = clicks / duration if duration > 0 else 0
-    return f"Total Clicks: {clicks} | Average Speed: {cps:.2f} CPS"
+def interval_to_cps(interval: float) -> float:
+    """Convert time interval in seconds to clicks per second (CPS)."""
+    if interval <= 0:
+        raise ValueError("Interval must be greater than zero.")
+    return 1.0 / interval
+
+
+def apply_jitter(base_interval: float, variance_ms: float) -> float:
+    """Apply a random millisecond variance to a base interval for human-like timing."""
+    if base_interval <= 0:
+        return 0.001
+    variance_sec = variance_ms / 1000.0
+    jittered = base_interval + random.uniform(-variance_sec, variance_sec)
+    return max(0.001, jittered)
+
+
+def parse_click_profile(raw_data: List[Dict[str, Any]]) -> List[Tuple[int, int, float]]:
+    """
+    Parse raw coordinate and delay dictionary records into validated click sequences.
+    Returns a list of tuples formatted as (x, y, delay_seconds).
+    """
+    parsed_sequence = []
+    for entry in raw_data:
+        x = max(0, int(entry.get("x", 0)))
+        y = max(0, int(entry.get("y", 0)))
+        delay = max(0.001, float(entry.get("delay", 0.1)))
+        parsed_sequence.append((x, y, delay))
+    return parsed_sequence
