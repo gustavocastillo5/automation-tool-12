@@ -1,40 +1,37 @@
+import pyautogui
 import time
 import logging
-import requests
-from functools import wraps
 
-# Configure logger for automation-tool-12
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('automation-tool-12')
 
-def retry_network_op(max_retries=3, delay=2):
-    """Decorator for retrying network operations with exponential backoff."""
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            attempts = 0
-            while attempts < max_retries:
-                try:
-                    return func(*args, **kwargs)
-                except (requests.RequestException, ConnectionError) as e:
-                    attempts += 1
-                    if attempts >= max_retries:
-                        logger.error(f"Final attempt failed for {func.__name__}: {e}")
-                        raise
-                    time.sleep(delay * attempts)
-        return wrapper
-    return decorator
-
-@retry_network_op(max_retries=3, delay=1)
-def fetch_config_from_server(url):
-    """Simple helper to sync autoclicker configuration."""
-    response = requests.get(url, timeout=5)
-    response.raise_for_status()
-    return response.json()
-
-if __name__ == '__main__':
-    # Example usage in the autoclicker context
+def execute_click(x: int, y: int, interval: float = 0.1) -> bool:
+    """Performs a click operation with safety bounds and error handling."""
     try:
-        config = fetch_config_from_server('http://api.local/config')
-        print(f"Loaded config: {config}")
+        # Validate coordinates against screen boundaries
+        screen_width, screen_height = pyautogui.size()
+        if not (0 <= x < screen_width and 0 <= y < screen_height):
+            logger.error(f"coordinates ({x}, {y}) out of screen bounds")
+            return False
+            
+        # Fail-safe: moving mouse to corner aborts execution
+        pyautogui.FAILSAFE = True
+        
+        pyautogui.click(x, y)
+        time.sleep(interval)
+        return True
+        
+    except pyautogui.FailSafeException:
+        logger.warning("failsafe triggered, aborting automation")
+        return False
     except Exception as e:
-        print(f"Autoclicker initialization failed: {e}")
+        logger.error(f"unexpected failure during click: {e}")
+        return False
+
+def run_sequence(clicks: list) -> None:
+    """Iterates through click tasks with basic state verification."""
+    for i, coords in enumerate(clicks):
+        success = execute_click(*coords)
+        if not success:
+            logger.info(f"sequence halted at index {i}")
+            break
