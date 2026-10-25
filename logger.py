@@ -1,51 +1,33 @@
 import logging
-import sys
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
+import os
 
-DEFAULT_LOG_DIR = Path("logs")
-DEFAULT_LOG_FILE = DEFAULT_LOG_DIR / "autoclicker.log"
-
-
-def setup_logger(
-    name: str = "autoclicker",
-    log_file: Path | str = DEFAULT_LOG_FILE,
-    level: int = logging.INFO,
-    max_bytes: int = 1_048_576,
-    backup_count: int = 5,
-) -> logging.Logger:
-    """Configures and returns a logger with console and rotating file output."""
+def setup_logger(name='automation-tool-12', log_file='app.log'):
+    """Initializes a rotating file logger for session tracking."""
     logger = logging.getLogger(name)
-    logger.setLevel(level)
+    logger.setLevel(logging.INFO)
 
-    if logger.handlers:
-        return logger
-
-    formatter = logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-    # Console output handler
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-
-    # Rotating file output handler
-    file_path = Path(log_file)
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-
-    file_handler = RotatingFileHandler(
-        file_path,
-        maxBytes=max_bytes,
-        backupCount=backup_count,
-        encoding="utf-8",
-    )
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+    # Prevent duplicate handlers if function called multiple times
+    if not logger.handlers:
+        # 5MB per file, keep 3 backups
+        handler = RotatingFileHandler(
+            log_file, 
+            maxBytes=5 * 1024 * 1024, 
+            backupCount=3
+        )
+        
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        
+        # Optional: log to console as well
+        console = logging.StreamHandler()
+        console.setFormatter(formatter)
+        logger.addHandler(console)
 
     return logger
 
-
-# Default application logger instance
+# Initialize global logger instance
 logger = setup_logger()
