@@ -1,31 +1,34 @@
-class AutomationError(Exception):
-    """Base exception class for automation-tool-12."""
+import time
+import functools
+import logging
+
+# Configure basic logger for network events
+logger = logging.getLogger('automation-tool-12')
+
+class NetworkError(Exception):
+    """Base class for network exceptions in automation-tool-12."""
     pass
 
-
-class ClickerConfigurationError(AutomationError):
-    """Raised when the configuration file is invalid or missing."""
-    def __init__(self, message: str, config_path: str) -> None:
-        self.config_path: str = config_path
-        super().__init__(f"{message} (path: {config_path})")
-
-
-class InputDeviceError(AutomationError):
-    """Raised when mouse or keyboard control fails."""
-    def __init__(self, device: str, details: str) -> None:
-        self.device: str = device
-        super().__init__(f"failed to interact with {device}: {details}")
-
-
-class ExecutionTimeoutError(AutomationError):
-    """Raised when an automation task exceeds its runtime limit."""
-    def __init__(self, task_name: str, duration: float) -> None:
-        self.task_name: str = task_name
-        super().__init__(f"task {task_name} timed out after {duration} seconds")
-
-
-class PermissionDeniedError(AutomationError):
-    """Raised when the tool lacks necessary OS privileges."""
-    def __init__(self, requirement: str) -> None:
-        self.requirement: str = requirement
-        super().__init__(f"insufficient permissions for: {requirement}")
+def retry_on_failure(max_attempts=3, delay=2):
+    """
+    Decorator to retry network operations upon encountering exceptions.
+    
+    :param max_attempts: Maximum number of retry attempts
+    :param delay: Seconds to wait between retries
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while attempts < max_attempts:
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    attempts += 1
+                    logger.warning(f"Attempt {attempts} failed for {func.__name__}: {e}")
+                    if attempts >= max_attempts:
+                        logger.error(f"Max retries reached for {func.__name__}.")
+                        raise NetworkError(f"Operation failed after {max_attempts} attempts.")
+                    time.sleep(delay)
+        return wrapper
+    return decorator
