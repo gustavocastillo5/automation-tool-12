@@ -1,51 +1,36 @@
 import json
 import os
-from pathlib import Path
 from typing import Any, Dict
 
-DEFAULT_CONFIG: Dict[str, Any] = {
-    "click_interval": 0.1,
-    "mouse_button": "left",
-    "hotkey": "f6",
-    "repeat_count": 0,  # 0 indicates infinite repetition
-    "randomize_interval": False,
-    "jitter_range_ms": 15,
+DEFAULT_CONFIG = {
+    "interval": 0.1,
+    "button": "left",
+    "repeat": 0,
+    "hotkey": "f6"
 }
 
+def load_config(filepath: str = "config.json") -> Dict[str, Any]:
+    """
+    Loads configuration from disk or returns defaults if missing
+    """
+    if not os.path.exists(filepath):
+        save_default_config(filepath)
+        return DEFAULT_CONFIG
 
-class ConfigLoader:
-    """Manages application configuration loading and default fallbacks."""
+    try:
+        with open(filepath, "r") as f:
+            config = json.load(f)
+            # Merge with defaults to ensure missing keys are present
+            return {**DEFAULT_CONFIG, **config}
+    except (json.JSONDecodeError, IOError):
+        return DEFAULT_CONFIG
 
-    def __init__(self, config_file: str = "config.json") -> None:
-        self.config_path = Path(config_file)
-        self.config = DEFAULT_CONFIG.copy()
-
-    def load(self) -> Dict[str, Any]:
-        """Loads configuration from JSON file, merging with default settings."""
-        if not self.config_path.exists():
-            self.save(self.config)
-            return self.config
-
-        try:
-            with open(self.config_path, "r", encoding="utf-8") as f:
-                user_config = json.load(f)
-                if isinstance(user_config, dict):
-                    self.config.update(user_config)
-        except (json.JSONDecodeError, OSError) as err:
-            # Fall back to default settings on read error or corrupt file
-            print(f"Warning: Failed to load config file ({err}). Using defaults.")
-
-        return self.config
-
-    def save(self, settings: Dict[str, Any] = None) -> bool:
-        """Saves active configuration to disk."""
-        if settings is not None:
-            self.config.update(settings)
-
-        try:
-            with open(self.config_path, "w", encoding="utf-8") as f:
-                json.dump(self.config, f, indent=4)
-            return True
-        except OSError as err:
-            print(f"Error saving configuration file: {err}")
-            return False
+def save_default_config(filepath: str) -> None:
+    """
+    Persists default configuration to specified file
+    """
+    try:
+        with open(filepath, "w") as f:
+            json.dump(DEFAULT_CONFIG, f, indent=4)
+    except IOError as e:
+        print(f"Failed to write config: {e}")
