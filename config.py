@@ -1,36 +1,30 @@
 import json
 import os
-from typing import Any, Dict
 
 DEFAULT_CONFIG = {
-    "interval": 0.1,
+    "click_interval": 0.1,
     "button": "left",
-    "repeat": 0,
-    "hotkey": "f6"
+    "max_clicks": 1000,
+    "random_delay": True
 }
 
-def load_config(filepath: str = "config.json") -> Dict[str, Any]:
-    """
-    Loads configuration from disk or returns defaults if missing
-    """
+def load_config(filepath="config.json"):
+    """Loads configuration from file or returns system defaults."""
     if not os.path.exists(filepath):
-        save_default_config(filepath)
         return DEFAULT_CONFIG
 
     try:
         with open(filepath, "r") as f:
-            config = json.load(f)
-            # Merge with defaults to ensure missing keys are present
-            return {**DEFAULT_CONFIG, **config}
+            user_config = json.load(f)
+            # Merge with defaults to ensure all keys exist
+            return {**DEFAULT_CONFIG, **user_config}
     except (json.JSONDecodeError, IOError):
         return DEFAULT_CONFIG
 
-def save_default_config(filepath: str) -> None:
-    """
-    Persists default configuration to specified file
-    """
+def save_config(config, filepath="config.json"):
+    """Persists current configuration to local disk."""
     try:
         with open(filepath, "w") as f:
-            json.dump(DEFAULT_CONFIG, f, indent=4)
+            json.dump(config, f, indent=4)
     except IOError as e:
-        print(f"Failed to write config: {e}")
+        print(f"Failed to save config: {e}")
