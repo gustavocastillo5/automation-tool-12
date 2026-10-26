@@ -1,37 +1,32 @@
-import pyautogui
 import time
-import logging
+import pyautogui
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('automation-tool-12')
+def run_autoclicker(interval: float, clicks: int):
+    """Executes clicks based on validated user input."""
+    if not isinstance(interval, (int, float)) or interval < 0:
+        raise ValueError("Interval must be a non-negative number")
+    if not isinstance(clicks, int) or clicks <= 0:
+        raise ValueError("Click count must be a positive integer")
 
-def execute_click(x: int, y: int, interval: float = 0.1) -> bool:
-    """Performs a click operation with safety bounds and error handling."""
+    print(f"Starting automation: {clicks} clicks at {interval}s intervals")
+    
     try:
-        # Validate coordinates against screen boundaries
-        screen_width, screen_height = pyautogui.size()
-        if not (0 <= x < screen_width and 0 <= y < screen_height):
-            logger.error(f"coordinates ({x}, {y}) out of screen bounds")
-            return False
-            
-        # Fail-safe: moving mouse to corner aborts execution
-        pyautogui.FAILSAFE = True
-        
-        pyautogui.click(x, y)
-        time.sleep(interval)
-        return True
-        
+        for i in range(clicks):
+            pyautogui.click()
+            time.sleep(interval)
+            print(f"Click {i+1}/{clicks} complete")
     except pyautogui.FailSafeException:
-        logger.warning("failsafe triggered, aborting automation")
-        return False
-    except Exception as e:
-        logger.error(f"unexpected failure during click: {e}")
-        return False
+        print("Fail-safe triggered: aborting execution")
 
-def run_sequence(clicks: list) -> None:
-    """Iterates through click tasks with basic state verification."""
-    for i, coords in enumerate(clicks):
-        success = execute_click(*coords)
-        if not success:
-            logger.info(f"sequence halted at index {i}")
-            break
+def main():
+    # Example inputs for the automation processing loop
+    try:
+        user_interval = float(input("Enter interval (seconds): "))
+        user_clicks = int(input("Enter number of clicks: "))
+        
+        run_autoclicker(user_interval, user_clicks)
+    except ValueError as e:
+        print(f"Input validation error: {e}")
+
+if __name__ == "__main__":
+    main()
