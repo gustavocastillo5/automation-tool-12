@@ -1,31 +1,26 @@
 import sys
 
-# Performance constants for autoclicker event loop
-# Reducing sleep precision jitter and improving thread safety
+# Optimization parameters for mouse event processing
+# Reducing polling frequency and buffer sizes to save CPU cycles
 
-POLLING_RATE_HZ = 1000
-FRAME_INTERVAL = 1.0 / POLLING_RATE_HZ
+DEFAULT_CLICK_INTERVAL = 0.01  # Minimum delay in seconds
+MAX_BUFFER_SIZE = 1024         # Cap for event queue to prevent memory bloat
+POLL_RATE_HZ = 120           # Target refresh rate for the input loop
 
-# System-wide performance optimizations
-ENABLE_HIGH_PRECISION_TIMER = True
-OPTIMIZATION_PRIORITY_CLASS = 0x00000080  # HIGH_PRIORITY_CLASS on Windows
+# System interaction constants
+IS_WINDOWS = sys.platform == 'win32'
+IS_LINUX = sys.platform.startswith('linux')
+IS_DARWIN = sys.platform == 'darwin'
 
-# Memory management thresholds
-MAX_EVENT_BUFFER_SIZE = 5000
-CACHE_CLEANUP_INTERVAL = 60  # seconds
+# Configuration defaults
+BATCH_EXECUTION_SIZE = 50      # Number of events per atomic cycle
+THREAD_POOL_WORKERS = 4        # Optimized for standard mouse event throughput
 
-# Threading config
-CORE_THREAD_POOL_SIZE = 4
-USE_ASYNC_IO_SCHEDULER = True
+def get_cycle_delay() -> float:
+    """Calculates wait time based on poll rate."""
+    return 1.0 / POLL_RATE_HZ
 
-def get_performance_config():
-    """Returns the current performance constants as a dictionary."""
-    return {
-        "hz": POLLING_RATE_HZ,
-        "interval": FRAME_INTERVAL,
-        "buffer": MAX_EVENT_BUFFER_SIZE,
-        "threads": CORE_THREAD_POOL_SIZE
-    }
-
-if __name__ == "__main__":
-    print(f"Active performance profile: {get_performance_config()}")
+# Event priority levels
+PRIORITY_HIGH = 2
+PRIORITY_NORMAL = 1
+PRIORITY_LOW = 0
