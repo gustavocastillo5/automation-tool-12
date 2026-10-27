@@ -1,26 +1,35 @@
 import sys
 
-# Optimization parameters for mouse event processing
-# Reducing polling frequency and buffer sizes to save CPU cycles
+# Application configuration defaults
+APP_NAME = "automation-tool-12"
+VERSION = "1.0.0"
 
-DEFAULT_CLICK_INTERVAL = 0.01  # Minimum delay in seconds
-MAX_BUFFER_SIZE = 1024         # Cap for event queue to prevent memory bloat
-POLL_RATE_HZ = 120           # Target refresh rate for the input loop
+# Timing constraints in seconds
+DEFAULT_CLICK_INTERVAL = 0.1
+MIN_INTERVAL = 0.01
+MAX_INTERVAL = 60.0
 
-# System interaction constants
-IS_WINDOWS = sys.platform == 'win32'
-IS_LINUX = sys.platform.startswith('linux')
-IS_DARWIN = sys.platform == 'darwin'
+# Coordinate system boundaries
+SCREEN_WIDTH = 1920
+SCREEN_HEIGHT = 1080
 
-# Configuration defaults
-BATCH_EXECUTION_SIZE = 50      # Number of events per atomic cycle
-THREAD_POOL_WORKERS = 4        # Optimized for standard mouse event throughput
+# Mouse button identifiers
+LEFT_BUTTON = "left"
+RIGHT_BUTTON = "right"
+MIDDLE_BUTTON = "middle"
 
-def get_cycle_delay() -> float:
-    """Calculates wait time based on poll rate."""
-    return 1.0 / POLL_RATE_HZ
+# Status codes for execution flow
+STATUS_IDLE = 0
+STATUS_RUNNING = 1
+STATUS_ERROR = 2
 
-# Event priority levels
-PRIORITY_HIGH = 2
-PRIORITY_NORMAL = 1
-PRIORITY_LOW = 0
+# Logging configuration
+LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+LOG_FILE = "automation.log"
+
+def get_platform():
+    """Return the operating system identifier."""
+    return sys.platform
+
+# Supported platforms for automation hooks
+SUPPORTED_PLATFORMS = ["win32", "linux", "darwin"]
