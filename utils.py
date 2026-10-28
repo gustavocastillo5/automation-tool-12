@@ -1,39 +1,28 @@
+import pyautogui
+import time
 import random
-from typing import List, Dict, Tuple, Any
 
+def safe_click(x, y, delay=0.1):
+    """Performs a mouse click at coordinates with a small delay."""
+    pyautogui.moveTo(x, y)
+    time.sleep(delay)
+    pyautogui.click()
 
-def cps_to_interval(cps: float) -> float:
-    """Convert clicks per second (CPS) to time interval in seconds."""
-    if cps <= 0:
-        raise ValueError("CPS must be greater than zero.")
-    return 1.0 / cps
+def randomized_interval(base_delay, jitter=0.2):
+    """Calculates sleep duration with added randomness."""
+    return base_delay + (random.random() * jitter)
 
+def get_screen_center():
+    """Returns the center coordinates of the primary display."""
+    width, height = pyautogui.size()
+    return width // 2, height // 2
 
-def interval_to_cps(interval: float) -> float:
-    """Convert time interval in seconds to clicks per second (CPS)."""
-    if interval <= 0:
-        raise ValueError("Interval must be greater than zero.")
-    return 1.0 / interval
+def emergency_stop():
+    """Resets pyautogui failsafe settings."""
+    pyautogui.FAILSAFE = True
 
-
-def apply_jitter(base_interval: float, variance_ms: float) -> float:
-    """Apply a random millisecond variance to a base interval for human-like timing."""
-    if base_interval <= 0:
-        return 0.001
-    variance_sec = variance_ms / 1000.0
-    jittered = base_interval + random.uniform(-variance_sec, variance_sec)
-    return max(0.001, jittered)
-
-
-def parse_click_profile(raw_data: List[Dict[str, Any]]) -> List[Tuple[int, int, float]]:
-    """
-    Parse raw coordinate and delay dictionary records into validated click sequences.
-    Returns a list of tuples formatted as (x, y, delay_seconds).
-    """
-    parsed_sequence = []
-    for entry in raw_data:
-        x = max(0, int(entry.get("x", 0)))
-        y = max(0, int(entry.get("y", 0)))
-        delay = max(0.001, float(entry.get("delay", 0.1)))
-        parsed_sequence.append((x, y, delay))
-    return parsed_sequence
+def type_text_human_like(text, interval=0.05):
+    """Types text with randomized intervals between keys."""
+    for char in text:
+        pyautogui.press(char)
+        time.sleep(random.uniform(interval, interval * 2))
