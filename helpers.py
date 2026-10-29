@@ -1,36 +1,28 @@
-import random
 import time
-from typing import Tuple
+import functools
+from typing import Callable, Any
 
+def throttled_execution(interval: float):
+    """Decorator to limit function execution frequency for mouse events."""
+    def decorator(func: Callable):
+        last_called = [0.0]
 
-def calculate_jitter_delay(base_interval: float, jitter_percent: float = 0.15) -> float:
-    """Calculate a randomized delay interval to simulate human clicking."""
-    if base_interval <= 0:
-        return 0.0
-    
-    jitter = base_interval * jitter_percent
-    min_delay = max(0.001, base_interval - jitter)
-    max_delay = base_interval + jitter
-    return random.uniform(min_delay, max_delay)
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs) -> Any:
+            current_time = time.perf_counter()
+            elapsed = current_time - last_called[0]
+            if elapsed >= interval:
+                last_called[0] = current_time
+                return func(*args, **kwargs)
+            return None
+        return wrapper
+    return decorator
 
+def batch_process_events(events: list, batch_size: int = 10):
+    """Chunking logic to reduce overhead in main loop."""
+    for i in range(0, len(events), batch_size):
+        yield events[i:i + batch_size]
 
-def is_within_bounds(point: Tuple[int, int], screen_size: Tuple[int, int]) -> bool:
-    """Validate if target click coordinates fall within the screen boundaries."""
-    x, y = point
-    max_x, max_y = screen_size
-    return 0 <= x < max_x and 0 <= y < max_y
-
-
-def cps_to_interval(cps: float) -> float:
-    """Convert clicks-per-second (CPS) to time delay interval in seconds."""
-    if cps <= 0:
-        raise ValueError("CPS value must be strictly positive")
-    return 1.0 / cps
-
-
-def format_elapsed_time(seconds: float) -> str:
-    """Format execution duration into HH:MM:SS format."""
-    total_seconds = int(seconds)
-    hours, remainder = divmod(total_seconds, 3600)
-    minutes, secs = divmod(remainder, 60)
-    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+def fast_timestamp() -> float:
+    """High-resolution timing for performance monitoring."""
+    return time.perf_counter_ns() / 1_000_000_000
