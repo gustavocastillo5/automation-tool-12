@@ -1,33 +1,40 @@
 import time
 import logging
+from typing import Callable, Any, Optional
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def process_clicks(interval, iterations):
-    """Executes automation loop with input validation."""
-    # Validate input constraints
-    if not isinstance(interval, (int, float)) or interval < 0.01:
-        raise ValueError("Interval must be a number at least 0.01 seconds.")
+def execute_with_retry(func: Callable, retries: int = 3, delay: float = 1.0) -> Any:
+    """Executes a network-dependent function with exponential backoff."""
+    last_exception = None
     
-    if not isinstance(iterations, int) or iterations < 1:
-        raise ValueError("Iterations must be a positive integer.")
+    for attempt in range(retries):
+        try:
+            return func()
+        except (ConnectionError, TimeoutError) as e:
+            last_exception = e
+            wait_time = delay * (2 ** attempt)
+            logger.warning(f"Attempt {attempt + 1} failed: {e}. Retrying in {wait_time}s...")
+            time.sleep(wait_time)
+        except Exception as e:
+            logger.error(f"Critical failure: {e}")
+            raise
+            
+    logger.error("Maximum retries reached. Operation failed.")
+    raise last_exception or Exception("Unknown network error")
 
-    logger.info(f"Starting automation: {iterations} clicks at {interval}s interval")
-    
-    try:
-        for i in range(iterations):
-            # Simulating click logic
-            logger.info(f"Execution step {i + 1}/{iterations}")
-            time.sleep(interval)
-    except KeyboardInterrupt:
-        logger.warning("Automation interrupted by user")
-    except Exception as e:
-        logger.error(f"Unexpected error during execution: {e}")
+class NetworkProcessor:
+    """Handles automated network clicks with integrated retry mechanism."""
+    def __init__(self, target_url: str):
+        self.target_url = target_url
 
-if __name__ == "__main__":
-    # Example usage with safe inputs
-    try:
-        process_clicks(interval=0.5, iterations=5)
-    except ValueError as err:
-        logger.error(f"Invalid configuration: {err}")
+    def perform_click(self, action_payload: dict) -> bool:
+        def request_task():
+            # Simulate network activity for autoclicker
+            print(f"Executing click on {self.target_url}")
+            return True
+            
+        try:
+            return execute_with_retry(request_task)
+        except Exception:
+            return False
