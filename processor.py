@@ -1,40 +1,30 @@
+import pyautogui
 import time
-import logging
-from typing import Callable, Any, Optional
+import random
+from typing import Tuple
 
-logger = logging.getLogger(__name__)
+def perform_click(x: int, y: int, interval: float = 0.1) -> None:
+    """Executes a mouse click at target coordinates."""
+    pyautogui.click(x, y)
+    time.sleep(interval)
 
-def execute_with_retry(func: Callable, retries: int = 3, delay: float = 1.0) -> Any:
-    """Executes a network-dependent function with exponential backoff."""
-    last_exception = None
-    
-    for attempt in range(retries):
-        try:
-            return func()
-        except (ConnectionError, TimeoutError) as e:
-            last_exception = e
-            wait_time = delay * (2 ** attempt)
-            logger.warning(f"Attempt {attempt + 1} failed: {e}. Retrying in {wait_time}s...")
-            time.sleep(wait_time)
-        except Exception as e:
-            logger.error(f"Critical failure: {e}")
-            raise
-            
-    logger.error("Maximum retries reached. Operation failed.")
-    raise last_exception or Exception("Unknown network error")
+def perform_drag(start: Tuple[int, int], end: Tuple[int, int], duration: float = 0.5) -> None:
+    """Executes a smooth drag operation between two points."""
+    pyautogui.moveTo(start[0], start[1])
+    pyautogui.dragTo(end[0], end[1], duration=duration, button='left')
 
-class NetworkProcessor:
-    """Handles automated network clicks with integrated retry mechanism."""
-    def __init__(self, target_url: str):
-        self.target_url = target_url
+def get_random_jitter(max_offset: int = 5) -> Tuple[int, int]:
+    """Generates small coordinate offsets to simulate human movement."""
+    dx = random.randint(-max_offset, max_offset)
+    dy = random.randint(-max_offset, max_offset)
+    return (dx, dy)
 
-    def perform_click(self, action_payload: dict) -> bool:
-        def request_task():
-            # Simulate network activity for autoclicker
-            print(f"Executing click on {self.target_url}")
-            return True
-            
-        try:
-            return execute_with_retry(request_task)
-        except Exception:
-            return False
+def click_with_jitter(x: int, y: int, max_offset: int = 3) -> None:
+    """Performs a click with randomized offset for human-like behavior."""
+    dx, dy = get_random_jitter(max_offset)
+    pyautogui.click(x + dx, y + dy)
+
+def safe_exit_check(key: str = 'q') -> bool:
+    """Checks if a specific key is pressed to terminate operations."""
+    import keyboard
+    return keyboard.is_pressed(key)
