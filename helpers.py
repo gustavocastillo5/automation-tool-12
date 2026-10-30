@@ -1,45 +1,48 @@
 import random
 import time
-from typing import Tuple, Optional
+from typing import Tuple
 
 
-def cps_to_interval(cps: float) -> float:
-    """Calculate interval in seconds from clicks per second."""
-    if cps <= 0:
-        raise ValueError("CPS must be greater than zero.")
-    return 1.0 / cps
+def calculate_jittered_delay(base_delay: float, variance: float = 0.1) -> float:
+    """Calculate a randomized delay around a base value to simulate human behavior."""
+    min_delay = max(0.001, base_delay * (1.0 - variance))
+    max_delay = base_delay * (1.0 + variance)
+    return random.uniform(min_delay, max_delay)
 
 
-def calculate_jitter_delay(base_interval: float, jitter_percentage: float = 0.1) -> float:
-    """Apply random variance to delay interval to simulate human behavior."""
-    if base_interval <= 0:
-        return 0.0
-    variance = base_interval * jitter_percentage
-    jittered = random.uniform(base_interval - variance, base_interval + variance)
-    return max(0.001, jittered)
+def apply_coordinate_offset(
+    x: int, y: int, max_offset: int = 3
+) -> Tuple[int, int]:
+    """Apply a small random pixel offset to target coordinates."""
+    offset_x = random.randint(-max_offset, max_offset)
+    offset_y = random.randint(-max_offset, max_offset)
+    return x + offset_x, y + offset_y
 
 
-def parse_coordinates(coord_str: str) -> Optional[Tuple[int, int]]:
-    """Parse coordinate string formatted as 'X,Y' into an integer tuple."""
-    try:
-        parts = coord_str.strip().split(",")
-        if len(parts) != 2:
-            return None
-        return int(parts[0].strip()), int(parts[1].strip())
-    except (ValueError, AttributeError):
-        return None
+def get_region_center(region: Tuple[int, int, int, int]) -> Tuple[int, int]:
+    """Calculate center coordinates (x, y) from a region tuple (x, y, width, height)."""
+    x, y, width, height = region
+    center_x = x + (width // 2)
+    center_y = y + (height // 2)
+    return center_x, center_y
 
 
-def clamp_coordinates(x: int, y: int, max_x: int, max_y: int) -> Tuple[int, int]:
-    """Ensure coordinates fall within valid screen boundaries."""
-    clamped_x = max(0, min(x, max_x))
-    clamped_y = max(0, min(y, max_y))
-    return clamped_x, clamped_y
+def convert_interval_to_seconds(value: float, unit: str = "ms") -> float:
+    """Convert an interval value and unit into seconds."""
+    unit_lower = unit.lower().strip()
+    if unit_lower in ("ms", "milliseconds"):
+        return max(0.001, value / 1000.0)
+    elif unit_lower in ("s", "sec", "seconds"):
+        return max(0.001, float(value))
+    elif unit_lower in ("m", "min", "minutes"):
+        return max(0.001, value * 60.0)
+    else:
+        raise ValueError(f"Unsupported time unit: {unit}")
 
 
-def human_sleep(duration: float) -> None:
-    """Sleep for specified duration with slight micro-variations."""
-    if duration <= 0:
-        return
-    actual_delay = calculate_jitter_delay(duration, jitter_percentage=0.05)
-    time.sleep(actual_delay)
+def format_cps(click_count: int, elapsed_time: float) -> str:
+    """Format current clicks per second (CPS) for display output."""
+    if elapsed_time <= 0:
+        return "0.0 CPS"
+    cps = click_count / elapsed_time
+    return f"{cps:.1f} CPS"
