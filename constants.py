@@ -1,35 +1,37 @@
-import sys
+import json
+import os
+from typing import Dict, Any
 
-# Application configuration defaults
-APP_NAME = "automation-tool-12"
-VERSION = "1.0.0"
+# Configuration defaults for autoclicker
+DEFAULT_CONFIG = {
+    "interval": 0.1,
+    "button": "left",
+    "repeat": 0,
+    "hotkey": "f6"
+}
 
-# Timing constraints in seconds
-DEFAULT_CLICK_INTERVAL = 0.1
+def load_session_data(filepath: str) -> Dict[str, Any]:
+    """Reads click settings from local JSON file."""
+    if not os.path.exists(filepath):
+        return DEFAULT_CONFIG.copy()
+    
+    try:
+        with open(filepath, 'r') as f:
+            data = json.load(f)
+            return {**DEFAULT_CONFIG, **data}
+    except (json.JSONDecodeError, IOError):
+        return DEFAULT_CONFIG.copy()
+
+def save_session_data(filepath: str, data: Dict[str, Any]) -> bool:
+    """Persists current clicker settings to disk."""
+    try:
+        with open(filepath, 'w') as f:
+            json.dump(data, f, indent=4)
+        return True
+    except IOError:
+        return False
+
+# Application constants
+MAX_INTERVAL = 10.0
 MIN_INTERVAL = 0.01
-MAX_INTERVAL = 60.0
-
-# Coordinate system boundaries
-SCREEN_WIDTH = 1920
-SCREEN_HEIGHT = 1080
-
-# Mouse button identifiers
-LEFT_BUTTON = "left"
-RIGHT_BUTTON = "right"
-MIDDLE_BUTTON = "middle"
-
-# Status codes for execution flow
-STATUS_IDLE = 0
-STATUS_RUNNING = 1
-STATUS_ERROR = 2
-
-# Logging configuration
-LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-LOG_FILE = "automation.log"
-
-def get_platform():
-    """Return the operating system identifier."""
-    return sys.platform
-
-# Supported platforms for automation hooks
-SUPPORTED_PLATFORMS = ["win32", "linux", "darwin"]
+SUPPORTED_BUTTONS = ['left', 'right', 'middle']
