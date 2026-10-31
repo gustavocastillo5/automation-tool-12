@@ -1,28 +1,43 @@
-import pyautogui
 import time
-import random
+import functools
+import logging
+from typing import Callable, Any, Type, Tuple
 
-def safe_click(x, y, delay=0.1):
-    """Performs a mouse click at coordinates with a small delay."""
-    pyautogui.moveTo(x, y)
-    time.sleep(delay)
-    pyautogui.click()
+logger = logging.getLogger("autoclicker.utils")
 
-def randomized_interval(base_delay, jitter=0.2):
-    """Calculates sleep duration with added randomness."""
-    return base_delay + (random.random() * jitter)
+def retry_network_op(
+    max_retries: int = 3,
+    initial_delay: float = 1.0,
+    backoff_factor: float = 2.0,
+    exceptions: Tuple[Type[Exception], ...] = (Exception,)
+) -> Callable:
+    """
+    Decorator that retries network operations with exponential backoff.
 
-def get_screen_center():
-    """Returns the center coordinates of the primary display."""
-    width, height = pyautogui.size()
-    return width // 2, height // 2
+    :param max_retries: Maximum number of retry attempts allowed.
+    :param initial_delay: Initial delay between attempts in seconds.
+    :param backoff_factor: Multiplier for calculating the next delay.
+    :param exceptions: Tuple of exception types that trigger a retry.
+    """
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            current_delay = initial_delay
+            for attempt in range(1, max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as err:
+                    if attempt == max_retries:
+                        logger.error(
+                            f"Operation '{func.__name__}' failed after {max_retries} attempts: {err}"
+                        )
+                        raise
 
-def emergency_stop():
-    """Resets pyautogui failsafe settings."""
-    pyautogui.FAILSAFE = True
-
-def type_text_human_like(text, interval=0.05):
-    """Types text with randomized intervals between keys."""
-    for char in text:
-        pyautogui.press(char)
-        time.sleep(random.uniform(interval, interval * 2))
+                    logger.warning(
+                        f"Network operation '{func.__name__}' failed (attempt {attempt}/{max_retries}). "
+                        f"Retrying in {current_delay:.2f}s... Error: {err}"
+                    )
+                    time.sleep(current_delay)
+                    current_delay *= backoff_factor
+        return wrapper
+    return decorator
