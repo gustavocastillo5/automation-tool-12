@@ -1,48 +1,45 @@
+import json
 import random
-import time
-from typing import Tuple
+from typing import List, Dict, Any
 
+def parse_click_sequence(raw_data: str) -> List[Dict[str, Any]]:
+    """Parse raw JSON string containing autoclicker macro actions.
+    
+    Validates that each action contains x, y coordinates and delay fields.
+    """
+    try:
+        sequence = json.loads(raw_data)
+    except json.JSONDecodeError as err:
+        raise ValueError(f"Invalid click sequence JSON: {err}")
+    
+    if not isinstance(sequence, list):
+        raise ValueError("Sequence data must be a list of action objects.")
+    
+    validated_actions = []
+    for index, action in enumerate(sequence):
+        if not isinstance(action, dict):
+            raise ValueError(f"Action at index {index} is not a valid dictionary.")
+        
+        x = action.get("x")
+        y = action.get("y")
+        delay = action.get("delay", 0.1)
+        button = action.get("button", "left")
 
-def calculate_jittered_delay(base_delay: float, variance: float = 0.1) -> float:
-    """Calculate a randomized delay around a base value to simulate human behavior."""
-    min_delay = max(0.001, base_delay * (1.0 - variance))
-    max_delay = base_delay * (1.0 + variance)
-    return random.uniform(min_delay, max_delay)
+        if not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
+            raise ValueError(f"Action at index {index} contains invalid coordinates.")
+        
+        validated_actions.append({
+            "x": int(x),
+            "y": int(y),
+            "delay": max(0.001, float(delay)),
+            "button": str(button).lower()
+        })
+        
+    return validated_actions
 
-
-def apply_coordinate_offset(
-    x: int, y: int, max_offset: int = 3
-) -> Tuple[int, int]:
-    """Apply a small random pixel offset to target coordinates."""
-    offset_x = random.randint(-max_offset, max_offset)
-    offset_y = random.randint(-max_offset, max_offset)
-    return x + offset_x, y + offset_y
-
-
-def get_region_center(region: Tuple[int, int, int, int]) -> Tuple[int, int]:
-    """Calculate center coordinates (x, y) from a region tuple (x, y, width, height)."""
-    x, y, width, height = region
-    center_x = x + (width // 2)
-    center_y = y + (height // 2)
-    return center_x, center_y
-
-
-def convert_interval_to_seconds(value: float, unit: str = "ms") -> float:
-    """Convert an interval value and unit into seconds."""
-    unit_lower = unit.lower().strip()
-    if unit_lower in ("ms", "milliseconds"):
-        return max(0.001, value / 1000.0)
-    elif unit_lower in ("s", "sec", "seconds"):
-        return max(0.001, float(value))
-    elif unit_lower in ("m", "min", "minutes"):
-        return max(0.001, value * 60.0)
-    else:
-        raise ValueError(f"Unsupported time unit: {unit}")
-
-
-def format_cps(click_count: int, elapsed_time: float) -> str:
-    """Format current clicks per second (CPS) for display output."""
-    if elapsed_time <= 0:
-        return "0.0 CPS"
-    cps = click_count / elapsed_time
-    return f"{cps:.1f} CPS"
+def apply_delay_jitter(base_delay: float, jitter_percentage: float = 0.1) -> float:
+    """Calculate a humanized delay by applying random jitter to a base interval."""
+    jitter_percentage = max(0.0, min(1.0, jitter_percentage))
+    variation = base_delay * jitter_percentage
+    actual_delay = base_delay + random.uniform(-variation, variation)
+    return max(0.001, round(actual_delay, 4))
