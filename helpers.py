@@ -1,45 +1,35 @@
-import json
-import random
-from typing import List, Dict, Any
+import time
+import functools
+from typing import Callable, Any
 
-def parse_click_sequence(raw_data: str) -> List[Dict[str, Any]]:
-    """Parse raw JSON string containing autoclicker macro actions.
-    
-    Validates that each action contains x, y coordinates and delay fields.
-    """
-    try:
-        sequence = json.loads(raw_data)
-    except json.JSONDecodeError as err:
-        raise ValueError(f"Invalid click sequence JSON: {err}")
-    
-    if not isinstance(sequence, list):
-        raise ValueError("Sequence data must be a list of action objects.")
-    
-    validated_actions = []
-    for index, action in enumerate(sequence):
-        if not isinstance(action, dict):
-            raise ValueError(f"Action at index {index} is not a valid dictionary.")
-        
-        x = action.get("x")
-        y = action.get("y")
-        delay = action.get("delay", 0.1)
-        button = action.get("button", "left")
+def debounce(wait_time: float) -> Callable:
+    """Limits frequency of high-precision input events."""
+    def decorator(func: Callable) -> Callable:
+        last_called = 0.0
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            nonlocal last_called
+            current_time = time.perf_counter()
+            if current_time - last_called >= wait_time:
+                last_called = current_time
+                return func(*args, **kwargs)
+        return wrapper
+    return decorator
 
-        if not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
-            raise ValueError(f"Action at index {index} contains invalid coordinates.")
-        
-        validated_actions.append({
-            "x": int(x),
-            "y": int(y),
-            "delay": max(0.001, float(delay)),
-            "button": str(button).lower()
-        })
-        
-    return validated_actions
+def batch_process(items: list, chunk_size: int = 100) -> list:
+    """Yields successive n-sized chunks from list for memory efficiency."""
+    for i in range(0, len(items), chunk_size):
+        yield items[i:i + chunk_size]
 
-def apply_delay_jitter(base_delay: float, jitter_percentage: float = 0.1) -> float:
-    """Calculate a humanized delay by applying random jitter to a base interval."""
-    jitter_percentage = max(0.0, min(1.0, jitter_percentage))
-    variation = base_delay * jitter_percentage
-    actual_delay = base_delay + random.uniform(-variation, variation)
-    return max(0.001, round(actual_delay, 4))
+class ClickCache:
+    """Thread-safe cache for click coordinate lookup."""
+    def __init__(self) -> None:
+        self._cache = {}
+
+    def get(self, key: str) -> Any:
+        return self._cache.get(key)
+
+    def set(self, key: str, value: Any) -> None:
+        self._cache[key] = value
+        if len(self._cache) > 1000:
+            self._cache.clear()
