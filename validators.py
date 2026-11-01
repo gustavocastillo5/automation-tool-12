@@ -1,46 +1,27 @@
-from typing import Dict, Any, Tuple
-
-
-class ValidationError(Exception):
-    """Raised when click processing inputs fail validation checks."""
-    pass
-
-
-def validate_coordinates(coords: Any, screen_size: Tuple[int, int] = (3840, 2160)) -> Tuple[int, int]:
-    """Validate target x, y click coordinates against allowable screen bounds."""
-    if not isinstance(coords, (tuple, list)) or len(coords) != 2:
-        raise ValidationError("Coordinates must be a tuple or list of 2 integers (x, y).")
+def validate_click_settings(interval, duration):
+    """Ensures click settings are within safe operational bounds."""
+    if not isinstance(interval, (int, float)) or not isinstance(duration, (int, float)):
+        raise ValueError("Interval and duration must be numeric.")
     
-    x, y = coords
-    if not (isinstance(x, int) and isinstance(y, int)):
-        raise ValidationError("Coordinate values x and y must be integers.")
-        
-    max_x, max_y = screen_size
-    if not (0 <= x <= max_x and 0 <= y <= max_y):
-        raise ValidationError(f"Coordinates ({x}, {y}) are outside screen bounds (0-{max_x}, 0-{max_y}).")
-        
-    return x, y
+    if interval < 0.01:
+        raise ValueError("Interval must be at least 0.01 seconds.")
+    
+    if duration < 0:
+        raise ValueError("Duration cannot be negative.")
+    
+    return True
 
+def validate_coordinate_range(x, y, max_x, max_y):
+    """Checks if coordinates fall within screen boundaries."""
+    if not (0 <= x <= max_x) or not (0 <= y <= max_y):
+        raise ValueError(f"Coordinates ({x}, {y}) out of screen bounds.")
+    return True
 
-def validate_click_config(config: Dict[str, Any]) -> Dict[str, Any]:
-    """Validate user parameters before starting the main click loop."""
-    required_keys = {"coords", "interval", "button", "repeat_count"}
-    missing = required_keys - set(config.keys())
-    if missing:
-        raise ValidationError(f"Missing required parameters in processing payload: {', '.join(missing)}")
-
-    validate_coordinates(config["coords"])
-
-    interval = config["interval"]
-    if not isinstance(interval, (int, float)) or interval < 0.001:
-        raise ValidationError("Click interval must be a number greater than or equal to 0.001s.")
-
-    valid_buttons = {"left", "right", "middle", "double"}
-    if config["button"] not in valid_buttons:
-        raise ValidationError(f"Invalid mouse button '{config['button']}'. Must be one of: {valid_buttons}")
-
-    repeat_count = config["repeat_count"]
-    if not isinstance(repeat_count, int) or repeat_count < -1:
-        raise ValidationError("Repeat count must be an integer >= -1 (-1 indicates continuous loop).")
-
-    return config
+if __name__ == "__main__":
+    # Test cases for basic validation logic
+    try:
+        validate_click_settings(0.1, 5)
+        validate_coordinate_range(100, 100, 1920, 1080)
+        print("Validation successful")
+    except ValueError as e:
+        print(f"Validation error: {e}")
