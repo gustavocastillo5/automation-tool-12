@@ -1,34 +1,33 @@
 import json
 import os
+from typing import Any, Dict
 
 DEFAULT_CONFIG = {
-    "click_interval": 0.1,
+    "interval": 0.1,
     "button": "left",
-    "hotkey": "f6",
-    "repeat_count": 0
+    "repeat": 100
 }
 
-def load_config(filepath="settings.json"):
-    """Loads configuration from disk or returns defaults."""
+def load_config(filepath: str = "config.json") -> Dict[str, Any]:
+    """Reads configuration from a local JSON file."""
     if not os.path.exists(filepath):
-        save_config(DEFAULT_CONFIG, filepath)
         return DEFAULT_CONFIG
-
+    
     try:
         with open(filepath, "r") as f:
-            config = json.load(f)
-            # Merge with defaults to ensure missing keys are handled
-            return {**DEFAULT_CONFIG, **config}
+            return json.load(f)
     except (json.JSONDecodeError, IOError):
         return DEFAULT_CONFIG
 
-def save_config(config, filepath="settings.json"):
-    """Persists configuration dictionary to a JSON file."""
+def save_config(config: Dict[str, Any], filepath: str = "config.json") -> bool:
+    """Persists current automation settings to disk."""
     try:
         with open(filepath, "w") as f:
             json.dump(config, f, indent=4)
-    except IOError as e:
-        print(f"Failed to save configuration: {e}")
+        return True
+    except IOError:
+        return False
 
-# Initialize global configuration state
-app_config = load_config()
+def validate_interval(interval: float) -> float:
+    """Ensures click interval is within safe bounds."""
+    return max(0.01, min(interval, 60.0))
