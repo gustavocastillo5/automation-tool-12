@@ -1,35 +1,32 @@
 import time
 import functools
-from typing import Callable, Any
+import logging
 
-def debounce(wait_time: float) -> Callable:
-    """Limits frequency of high-precision input events."""
-    def decorator(func: Callable) -> Callable:
-        last_called = 0.0
+logger = logging.getLogger(__name__)
+
+def retry_network_op(retries=3, delay=2, backoff=2):
+    """Decorator for retrying network operations with exponential backoff."""
+    def decorator(func):
         @functools.wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            nonlocal last_called
-            current_time = time.perf_counter()
-            if current_time - last_called >= wait_time:
-                last_called = current_time
-                return func(*args, **kwargs)
+        def wrapper(*args, **kwargs):
+            current_delay = delay
+            for attempt in range(retries):
+                try:
+                    return func(*args, **kwargs)
+                except (ConnectionError, TimeoutError) as e:
+                    if attempt == retries - 1:
+                        logger.error(f"Final attempt failed for {func.__name__}: {e}")
+                        raise
+                    
+                    logger.warning(
+                        f"Attempt {attempt + 1} failed for {func.__name__}, "
+                        f"retrying in {current_delay}s..."
+                    )
+                    time.sleep(current_delay)
+                    current_delay *= backoff
         return wrapper
     return decorator
 
-def batch_process(items: list, chunk_size: int = 100) -> list:
-    """Yields successive n-sized chunks from list for memory efficiency."""
-    for i in range(0, len(items), chunk_size):
-        yield items[i:i + chunk_size]
-
-class ClickCache:
-    """Thread-safe cache for click coordinate lookup."""
-    def __init__(self) -> None:
-        self._cache = {}
-
-    def get(self, key: str) -> Any:
-        return self._cache.get(key)
-
-    def set(self, key: str, value: Any) -> None:
-        self._cache[key] = value
-        if len(self._cache) > 1000:
-            self._cache.clear()
+def is_valid_url(url):
+    """Simple check for network endpoint availability."""
+    return url.startswith(('http://', 'https://'))
