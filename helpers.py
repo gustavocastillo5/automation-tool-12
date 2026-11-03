@@ -1,38 +1,31 @@
-import json
-import os
-from typing import Any, Dict
+import time
+import pyautogui
+import random
 
-DEFAULT_CONFIG = {
-    "click_interval": 0.1,
-    "button": "left",
-    "max_clicks": 1000,
-    "auto_start": False
-}
+def safe_click(x: int, y: int, interval: float = 0.1):
+    """Move mouse to coordinates and perform a click with jitter."""
+    pyautogui.moveTo(x + random.uniform(-1, 1), y + random.uniform(-1, 1), duration=0.1)
+    pyautogui.click()
+    time.sleep(interval)
 
-def load_configuration(filepath: str = "config.json") -> Dict[str, Any]:
-    """
-    Loads configuration from a JSON file with fallback to defaults.
-    """
-    config = DEFAULT_CONFIG.copy()
-    
-    if os.path.exists(filepath):
-        try:
-            with open(filepath, "r") as f:
-                user_config = json.load(f)
-                config.update(user_config)
-        except (json.JSONDecodeError, IOError) as e:
-            print(f"Warning: Could not load config {filepath}: {e}. Using defaults.")
-            
-    return config
+def get_screen_center():
+    """Calculate the center point of the primary display."""
+    width, height = pyautogui.size()
+    return width // 2, height // 2
 
-def save_configuration(config: Dict[str, Any], filepath: str = "config.json") -> bool:
-    """
-    Persists the current configuration dictionary to a JSON file.
-    """
-    try:
-        with open(filepath, "w") as f:
-            json.dump(config, f, indent=4)
-        return True
-    except IOError as e:
-        print(f"Error saving config to {filepath}: {e}")
-        return False
+def wait_random(min_s: float, max_s: float):
+    """Pause execution for a randomized duration."""
+    time.sleep(random.uniform(min_s, max_s))
+
+def validate_coordinates(x: int, y: int):
+    """Ensure coordinates are within screen bounds."""
+    width, height = pyautogui.size()
+    return 0 <= x <= width and 0 <= y <= height
+
+def perform_sequence(coords: list):
+    """Execute a series of clicks from a list of tuples."""
+    for x, y in coords:
+        if validate_coordinates(x, y):
+            safe_click(x, y)
+        else:
+            print(f"Warning: coordinate {x}, {y} out of bounds")
