@@ -1,19 +1,17 @@
 # automation-tool-12
 
-`automation-tool-12` is a high-performance Python-based autoclicker designed for task automation and repetitive interface testing. It provides a lightweight, low-latency solution for simulating mouse events with customizable timing and coordinate precision.
-
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+Automation-tool-12 is a high-performance Python-based autoclicker designed for precision tasks and repetitive UI interactions. It utilizes low-level system hooks to provide reliable click execution with minimal CPU overhead.
 
 ## Features
 
-*   **Precision Targeting:** Define specific X/Y screen coordinates or utilize the current cursor position to execute clicks.
-*   **Variable Intervals:** Configure millisecond-accurate delays between clicks to mimic human behavior and avoid detection.
-*   **Safety Hotkeys:** Global interrupt support allows you to instantly pause or terminate the script using a dedicated keyboard shortcut.
-*   **Multi-Click Sequences:** Support for scripted click patterns and loop counts to handle complex automation workflows.
+*   **Adaptive Intervals:** Set custom click delays with millisecond precision or utilize the "human-mode" to randomize intervals and bypass basic anti-bot triggers.
+*   **Dynamic Coordinates:** Configure click points using absolute screen coordinates or dynamic offsets relative to active window elements.
+*   **Hotkey Integration:** Start and stop automated sequences instantly using global keyboard listeners, ensuring you remain in control during execution.
+*   **Configuration Presets:** Save and load complex click profiles as JSON files to switch between different automation workflows seamlessly.
 
 ## Installation
 
-Ensure you have [Python 3.8+](https://www.python.org/) installed. Clone the repository and install the required dependencies:
+Ensure you have Python 3.8 or higher installed on your system. Clone the repository and install the required dependencies:
 
 ```bash
 git clone https://github.com/Developer/automation-tool-12.git
@@ -23,25 +21,20 @@ pip install -r requirements.txt
 
 ## Usage
 
-To run the tool with default settings (100ms interval, infinite loop), execute the following command in your terminal:
+To start a basic click sequence at your current cursor position with a 500ms delay, run the following command:
 
 ```bash
-python main.py --interval 0.1 --clicks 0
+python main.py --interval 0.5 --clicks 100
 ```
 
-### Configuration Options
-*   `--interval`: Set time between clicks in seconds.
-*   `--clicks`: Number of iterations (set to 0 for infinite).
-*   `--button`: Select mouse button (`left`, `right`, `middle`).
+For advanced usage, point the tool to a specific configuration file:
 
-**Example:**
-To perform 50 right-clicks with a 0.5-second delay:
 ```bash
-python main.py --button right --clicks 50 --interval 0.5
+python main.py --config configs/production_run.json
 ```
-
-*Note: You may need to grant Accessibility permissions (macOS) or run as Administrator (Windows) for the script to successfully inject inputs into other applications.*
 
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
