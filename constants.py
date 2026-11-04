@@ -1,37 +1,32 @@
-import json
-import os
-from typing import Dict, Any
+import sys
 
-# Configuration defaults for autoclicker
-DEFAULT_CONFIG = {
-    "interval": 0.1,
-    "button": "left",
-    "repeat": 0,
-    "hotkey": "f6"
-}
+# Optimized timing constants for high-frequency input
+# Using lower values to minimize CPU overhead per click
 
-def load_session_data(filepath: str) -> Dict[str, Any]:
-    """Reads click settings from local JSON file."""
-    if not os.path.exists(filepath):
-        return DEFAULT_CONFIG.copy()
-    
-    try:
-        with open(filepath, 'r') as f:
-            data = json.load(f)
-            return {**DEFAULT_CONFIG, **data}
-    except (json.JSONDecodeError, IOError):
-        return DEFAULT_CONFIG.copy()
+POLLING_RATE_HZ = 1000
+FRAME_INTERVAL = 1.0 / POLLING_RATE_HZ
 
-def save_session_data(filepath: str, data: Dict[str, Any]) -> bool:
-    """Persists current clicker settings to disk."""
-    try:
-        with open(filepath, 'w') as f:
-            json.dump(data, f, indent=4)
-        return True
-    except IOError:
-        return False
+# Thread safety buffers for asynchronous event processing
+MAX_QUEUE_SIZE = 1024
+BUFFER_THRESHOLD = 256
 
-# Application constants
-MAX_INTERVAL = 10.0
-MIN_INTERVAL = 0.01
-SUPPORTED_BUTTONS = ['left', 'right', 'middle']
+# System resource limits for performance stability
+MAX_CPU_PERCENT = 80.0
+MEMORY_LIMIT_MB = 512
+
+# Performance-oriented input event flags
+EVENT_FLAG_HARDWARE = 0x0001
+EVENT_FLAG_SYNCHRONOUS = 0x0002
+
+# Interaction delay tuning
+MIN_CLICK_LATENCY_MS = 0.5
+MAX_CLICK_LATENCY_MS = 2.0
+
+# Memory alignment for low-latency buffers
+BUFFER_ALIGNMENT = 64
+
+def get_performance_mode():
+    """Determines environment capability for tuning."""
+    return "high_performance" if sys.platform != "win32" else "standard"
+
+PERFORMANCE_MODE = get_performance_mode()
