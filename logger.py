@@ -1,54 +1,43 @@
-import os
 import logging
 from logging.handlers import RotatingFileHandler
+import os
 
-
-def setup_logger(
-    name: str = "autoclicker",
-    log_dir: str = "logs",
-    log_file: str = "automation.log",
-    max_bytes: int = 2 * 1024 * 1024,
-    backup_count: int = 5,
-    level: int = logging.INFO
-) -> logging.Logger:
-    """Configure and return a logger instance with rotating file support."""
+def setup_logger(name: str = "automation_tool") -> logging.Logger:
+    """
+    Configures a rotating file logger for automation-tool-12.
+    Limits file size to 1MB and keeps 3 backups.
+    """
     logger = logging.getLogger(name)
-    logger.setLevel(level)
+    logger.setLevel(logging.INFO)
 
     # Prevent duplicate handlers if re-initialized
-    if logger.handlers:
-        return logger
+    if logger.hasHandlers():
+        logger.handlers.clear()
 
-    # Ensure target output directory exists
-    os.makedirs(log_dir, exist_ok=True)
-    file_path = os.path.join(log_dir, log_file)
+    log_directory = "logs"
+    if not os.path.exists(log_directory):
+        os.makedirs(log_directory)
 
-    # Standard log format including file line info for debugging
-    log_format = logging.Formatter(
-        "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)d]: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+    log_file = os.path.join(log_directory, f"{name}.log")
+    
+    # Create rotating file handler
+    handler = RotatingFileHandler(
+        log_file, 
+        maxBytes=1_048_576, 
+        backupCount=3
     )
-
-    # Rotating file handler to manage disk usage
-    file_handler = RotatingFileHandler(
-        file_path,
-        maxBytes=max_bytes,
-        backupCount=backup_count,
-        encoding="utf-8"
+    
+    # Set format: timestamp - name - level - message
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
-    file_handler.setLevel(level)
-    file_handler.setFormatter(log_format)
-
-    # Console stream handler for live feedback
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(level)
-    console_handler.setFormatter(log_format)
-
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
+    handler.setFormatter(formatter)
+    
+    logger.addHandler(handler)
+    
+    # Console output for visibility during development
+    console = logging.StreamHandler()
+    console.setFormatter(formatter)
+    logger.addHandler(console)
 
     return logger
-
-
-# Create standard module-level logger instance
-logger = setup_logger()
