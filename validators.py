@@ -1,27 +1,33 @@
-def validate_click_settings(interval, duration):
-    """Ensures click settings are within safe operational bounds."""
-    if not isinstance(interval, (int, float)) or not isinstance(duration, (int, float)):
-        raise ValueError("Interval and duration must be numeric.")
-    
-    if interval < 0.01:
-        raise ValueError("Interval must be at least 0.01 seconds.")
-    
-    if duration < 0:
-        raise ValueError("Duration cannot be negative.")
-    
-    return True
+import re
+from typing import Any, Optional
 
-def validate_coordinate_range(x, y, max_x, max_y):
-    """Checks if coordinates fall within screen boundaries."""
-    if not (0 <= x <= max_x) or not (0 <= y <= max_y):
-        raise ValueError(f"Coordinates ({x}, {y}) out of screen bounds.")
-    return True
+class ClickValidator:
+    """Handles input validation for automation parameters."""
 
-if __name__ == "__main__":
-    # Test cases for basic validation logic
-    try:
-        validate_click_settings(0.1, 5)
-        validate_coordinate_range(100, 100, 1920, 1080)
-        print("Validation successful")
-    except ValueError as e:
-        print(f"Validation error: {e}")
+    @staticmethod
+    def validate_interval(interval: Any) -> float:
+        """Ensures interval is a positive numeric value."""
+        try:
+            value = float(interval)
+            if value < 0.01:
+                return 0.01
+            return value
+        except (ValueError, TypeError):
+            return 0.1
+
+    @staticmethod
+    def validate_coordinates(x: Any, y: Any) -> tuple[int, int]:
+        """Sanitizes screen coordinate inputs."""
+        try:
+            return int(x), int(y)
+        except (ValueError, TypeError):
+            return 0, 0
+
+    @staticmethod
+    def validate_process_name(name: Any) -> str:
+        """Validates process name against basic pattern."""
+        if not isinstance(name, str) or not name:
+            return ""
+        # Basic alphanumeric and underscore validation
+        clean_name = re.sub(r'[^a-zA-Z0-9_.]', '', name)
+        return clean_name
