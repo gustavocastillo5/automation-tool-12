@@ -1,37 +1,36 @@
-import time
-import functools
 import logging
+import sys
+from typing import Callable, Any, Optional
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('automation-tool-12')
 
-def retry_network_op(retries=3, delay=2, exceptions=(ConnectionError, TimeoutError)):
-    """
-    Decorator to retry network operations upon specific exceptions.
-    """
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            last_exception = None
-            for attempt in range(retries):
-                try:
-                    return func(*args, **kwargs)
-                except exceptions as e:
-                    last_exception = e
-                    logger.warning(f"Attempt {attempt + 1} failed: {e}. Retrying in {delay}s...")
-                    time.sleep(delay)
-            
-            logger.error("Max retries exceeded for network operation.")
-            raise last_exception
-        return wrapper
-    return decorator
+def execute_with_safety(func: Callable, *args: Any, **kwargs: Any) -> Optional[Any]:
+    """Executes click events with robust boundary checks."""
+    try:
+        return func(*args, **kwargs)
+    except PermissionError:
+        logger.error("Insufficient OS privileges to perform click.")
+    except ValueError as e:
+        logger.error(f"Invalid coordinates provided: {e}")
+    except Exception as e:
+        logger.critical(f"Unexpected system failure: {e}")
+    return None
 
-@retry_network_op(retries=3, delay=1)
-def fetch_remote_config(url):
-    """
-    Example network-bound function for the autoclicker remote settings.
-    """
-    # Placeholder for actual requests call logic
-    import random
-    if random.random() < 0.7:
-        raise ConnectionError("Failed to reach configuration server")
-    return {"status": "ok", "interval": 0.5}
+def validate_coordinates(x: int, y: int, screen_width: int, screen_height: int) -> bool:
+    """Checks if coordinate inputs are within monitor bounds."""
+    if not isinstance(x, int) or not isinstance(y, int):
+        logger.warning("Non-integer coordinates received.")
+        return False
+    if 0 <= x <= screen_width and 0 <= y <= screen_height:
+        return True
+    logger.warning(f"Coordinates ({x}, {y}) out of bounds.")
+    return False
+
+def get_safe_input(prompt: str, min_val: int, max_val: int) -> int:
+    """Sanitizes user input for autoclicker timing configurations."""
+    try:
+        value = int(input(prompt))
+        return max(min_val, min(value, max_val))
+    except ValueError:
+        logger.warning("Invalid numeric input, defaulting to minimum.")
+        return min_val
