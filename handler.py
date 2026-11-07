@@ -1,58 +1,65 @@
-import logging
 import time
-from typing import Callable, Tuple, Optional
+import logging
+import urllib.request
+import urllib.error
+from typing import Callable, Any, Optional
 
-logger = logging.getLogger("autoclicker.handler")
+logger = logging.getLogger(__name__)
 
+class NetworkHandler:
+    """Handles network requests with built-in retry logic for autoclicker configs."""
 
-class ActionExecutionError(Exception):
-    """Raised when an automated click action fails unexpectedly."""
-    pass
-
-
-class SafetyTriggeredError(Exception):
-    """Raised when safety limits or bounds are violated."""
-    pass
-
-
-class SafeClickHandler:
-    """Handles click action dispatch with boundary checks and error recovery."""
-
-    def __init__(self, screen_bounds: Tuple[int, int] = (1920, 1080), max_retries: int = 3):
-        self.screen_bounds = screen_bounds
+    def __init__(self, max_retries: int = 3, backoff_factor: float = 1.5, timeout: float = 5.0):
         self.max_retries = max_retries
-        self.consecutive_failures = 0
+        self.backoff_factor = backoff_factor
+        self.timeout = timeout
 
-    def validate_coordinates(self, x: int, y: int) -> bool:
-        """Ensure target click coordinates fall within display boundaries."""
-        max_x, max_y = self.screen_bounds
-        if x < 0 or y < 0 or x > max_x or y > max_y:
-            logger.warning(f"Coordinates ({x}, {y}) out of bounds (0-{max_x}, 0-{max_y})")
-            return False
-        return True
+    def execute_with_retry(self, operation: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+        """Executes a network callable with exponential backoff retries."""
+        attempt = 0
+        delay = 1.0
 
-    def execute_click(self, click_func: Callable[[int, int], bool], x: int, y: int, delay: float = 0.1) -> bool:
-        """Safely execute a click function with edge-case validation and retries."""
-        if not self.validate_coordinates(x, y):
-            raise SafetyTriggeredError(f"Target position ({x}, {y}) exceeds screen bounds.")
-
-        # Edge case: avoid non-positive or dangerously low delays
-        if delay < 0.001:
-            logger.warning(f"Interval {delay}s too low; clamping to minimum threshold of 0.001s.")
-            delay = 0.001
-
-        for attempt in range(1, self.max_retries + 1):
+        while attempt < self.max_retries:
             try:
+                return operation(*args, **kwargs)
+            except (urllib.error.URLError, TimeoutError, OSError) as exc:
+                attempt += 1
+                if attempt >= self.max_retries:
+                    logger.error(f"Network operation failed after {attempt} attempts: {exc}")
+                    raise exc
+                
+                logger.warning(
+                    f"Attempt {attempt}/{self.max_retries} failed ({exc}). Retrying in {delay:.1f}s..."
+                )
                 time.sleep(delay)
-                if click_func(x, y):
-                    self.consecutive_failures = 0
-                    return True
-                logger.warning(f"Click attempt {attempt} returned non-truthy status.")
-            except Exception as exc:
-                self.consecutive_failures += 1
-                logger.error(f"Unexpected error during click execution (attempt {attempt}): {exc}")
+                delay *= self.backoff_factor
 
-            if self.consecutive_failures >= 5:
-                raise ActionExecutionError("Emergency stop triggered due to repeated failure rate.")
+    def fetch_remote_preset(self, url: str) -> Optional[bytes]:
+        """Fetch click sequence preset from remote endpoint with retry mechanism."""
+        def _request():
+            req = urllib.request.Request(url, headers={'User-Agent': 'Autoclicker-Client/1.2'})
+            with urllib.request.urlopen(req, timeout=self.timeout) as response:
+                return response.read()
 
-        return False
+        try:
+            return self.execute_with_retry(_request)
+        except Exception as e:
+            logger.critical(f"Failed to fetch remote preset from {url}: {e}")
+            return None
+
+    def send_telemetry(self, endpoint: str, data: bytes) -> bool:
+        """Post session click metrics to telemetry server with retry logic."""
+        def _post():
+            req = urllib.request.Request(
+                endpoint,
+                data=data,
+                headers={'Content-Type': 'application/json'},
+                method='POST'
+            )
+            with urllib.request.urlopen(req, timeout=self.timeout) as response:
+                return response.status == 200
+
+        try:
+            return bool(self.execute_with_retry(_post))
+        except Exception:
+            return False
