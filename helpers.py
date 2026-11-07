@@ -4,29 +4,34 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def retry_network_op(retries=3, delay=2, backoff=2):
-    """Decorator for retrying network operations with exponential backoff."""
+def retry_network_op(retries=3, delay=2, exceptions=(ConnectionError, TimeoutError)):
+    """
+    Decorator to retry network operations upon specific exceptions.
+    """
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            current_delay = delay
+            last_exception = None
             for attempt in range(retries):
                 try:
                     return func(*args, **kwargs)
-                except (ConnectionError, TimeoutError) as e:
-                    if attempt == retries - 1:
-                        logger.error(f"Final attempt failed for {func.__name__}: {e}")
-                        raise
-                    
-                    logger.warning(f"Attempt {attempt + 1} failed, retrying in {current_delay}s...")
-                    time.sleep(current_delay)
-                    current_delay *= backoff
-            return None
+                except exceptions as e:
+                    last_exception = e
+                    logger.warning(f"Attempt {attempt + 1} failed: {e}. Retrying in {delay}s...")
+                    time.sleep(delay)
+            
+            logger.error("Max retries exceeded for network operation.")
+            raise last_exception
         return wrapper
     return decorator
 
 @retry_network_op(retries=3, delay=1)
 def fetch_remote_config(url):
-    """Example network call wrapper for autoclicker configuration."""
-    # Placeholder for actual requests logic
-    return {"status": "ok", "interval": 100}
+    """
+    Example network-bound function for the autoclicker remote settings.
+    """
+    # Placeholder for actual requests call logic
+    import random
+    if random.random() < 0.7:
+        raise ConnectionError("Failed to reach configuration server")
+    return {"status": "ok", "interval": 0.5}
