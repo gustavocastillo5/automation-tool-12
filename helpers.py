@@ -1,36 +1,32 @@
-import logging
-import sys
-from typing import Callable, Any, Optional
+import time
+import pyautogui
+import random
 
-logger = logging.getLogger('automation-tool-12')
+def click_at(x, y, interval=0.1):
+    """Performs a click with a slight randomized delay."""
+    pyautogui.moveTo(x, y)
+    time.sleep(random.uniform(0.01, interval))
+    pyautogui.click()
 
-def execute_with_safety(func: Callable, *args: Any, **kwargs: Any) -> Optional[Any]:
-    """Executes click events with robust boundary checks."""
-    try:
-        return func(*args, **kwargs)
-    except PermissionError:
-        logger.error("Insufficient OS privileges to perform click.")
-    except ValueError as e:
-        logger.error(f"Invalid coordinates provided: {e}")
-    except Exception as e:
-        logger.critical(f"Unexpected system failure: {e}")
-    return None
+def safe_move(x, y, duration=0.2):
+    """Moves mouse to coordinates with a set duration."""
+    pyautogui.moveTo(x, y, duration=duration, tween=pyautogui.easeInOutQuad)
 
-def validate_coordinates(x: int, y: int, screen_width: int, screen_height: int) -> bool:
-    """Checks if coordinate inputs are within monitor bounds."""
-    if not isinstance(x, int) or not isinstance(y, int):
-        logger.warning("Non-integer coordinates received.")
-        return False
-    if 0 <= x <= screen_width and 0 <= y <= screen_height:
-        return True
-    logger.warning(f"Coordinates ({x}, {y}) out of bounds.")
-    return False
+def wait_for_seconds(base_seconds, variance=0.5):
+    """Pauses execution for a random duration around a base."""
+    sleep_time = base_seconds + random.uniform(-variance, variance)
+    time.sleep(max(0, sleep_time))
 
-def get_safe_input(prompt: str, min_val: int, max_val: int) -> int:
-    """Sanitizes user input for autoclicker timing configurations."""
-    try:
-        value = int(input(prompt))
-        return max(min_val, min(value, max_val))
-    except ValueError:
-        logger.warning("Invalid numeric input, defaulting to minimum.")
-        return min_val
+def get_screen_center():
+    """Returns the center coordinates of the primary monitor."""
+    width, height = pyautogui.size()
+    return width // 2, height // 2
+
+def perform_double_click(x, y):
+    """Performs a double click at the target coordinates."""
+    pyautogui.doubleClick(x, y)
+
+def drag_to(start_x, start_y, end_x, end_y):
+    """Drags mouse from start to end coordinates."""
+    pyautogui.moveTo(start_x, start_y)
+    pyautogui.dragTo(end_x, end_y, duration=0.5, button='left')
