@@ -2,31 +2,29 @@ import time
 import pyautogui
 import random
 
-def click_at(x, y, interval=0.1):
-    """Performs a click with a slight randomized delay."""
-    pyautogui.moveTo(x, y)
-    time.sleep(random.uniform(0.01, interval))
+def safe_click(x: int, y: int, delay_range: tuple = (0.1, 0.5)) -> None:
+    """Move mouse to coordinates and perform a click with randomized delay."""
+    pyautogui.moveTo(x, y, duration=random.uniform(0.1, 0.3))
     pyautogui.click()
+    time.sleep(random.uniform(*delay_range))
 
-def safe_move(x, y, duration=0.2):
-    """Moves mouse to coordinates with a set duration."""
-    pyautogui.moveTo(x, y, duration=duration, tween=pyautogui.easeInOutQuad)
-
-def wait_for_seconds(base_seconds, variance=0.5):
-    """Pauses execution for a random duration around a base."""
-    sleep_time = base_seconds + random.uniform(-variance, variance)
-    time.sleep(max(0, sleep_time))
-
-def get_screen_center():
-    """Returns the center coordinates of the primary monitor."""
+def get_screen_center() -> tuple:
+    """Return the center coordinates of the primary display."""
     width, height = pyautogui.size()
-    return width // 2, height // 2
+    return (width // 2, height // 2)
 
-def perform_double_click(x, y):
-    """Performs a double click at the target coordinates."""
-    pyautogui.doubleClick(x, y)
+def perform_sequence(coordinates: list, interval: float = 1.0) -> None:
+    """Execute clicks at a list of provided (x, y) tuples."""
+    for x, y in coordinates:
+        pyautogui.click(x, y)
+        time.sleep(interval)
 
-def drag_to(start_x, start_y, end_x, end_y):
-    """Drags mouse from start to end coordinates."""
-    pyautogui.moveTo(start_x, start_y)
-    pyautogui.dragTo(end_x, end_y, duration=0.5, button='left')
+def wait_for_ready(seconds: int = 3) -> None:
+    """Cooldown period before automation starts."""
+    print(f"Starting in {seconds} seconds...")
+    time.sleep(seconds)
+
+def is_on_screen(x: int, y: int) -> bool:
+    """Validate if coordinate is within current monitor bounds."""
+    width, height = pyautogui.size()
+    return 0 <= x < width and 0 <= y < height
