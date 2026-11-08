@@ -1,58 +1,39 @@
+import pyautogui
 import time
-from typing import Dict, Any, List, Optional
+import logging
+from typing import Tuple
 
-class ClickConfigError(ValueError):
-    """Raised when autoclicker input parameters fail validation."""
-    pass
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('automation-tool-12')
 
-def validate_click_params(params: Dict[str, Any]) -> Dict[str, Any]:
-    """Validate click configuration dictionary parameters."""
-    interval = params.get("interval", 0.1)
-    if not isinstance(interval, (int, float)) or interval <= 0:
-        raise ClickConfigError(f"Invalid interval: {interval}. Must be positive number.")
+class AutoClicker:
+    """Handles automated mouse interaction cycles."""
 
-    clicks = params.get("clicks", 1)
-    if not isinstance(clicks, int) or clicks < 0:
-        raise ClickConfigError(f"Invalid click count: {clicks}. Must be non-negative integer.")
+    def __init__(self, interval: float = 1.0, clicks: int = 1):
+        self.interval = interval
+        self.clicks = clicks
+        self.is_active = False
 
-    button = params.get("button", "left")
-    if button not in ("left", "right", "middle"):
-        raise ClickConfigError(f"Invalid button type: '{button}'. Must be left, right, or middle.")
-
-    position = params.get("position")
-    if position is not None:
-        if not (isinstance(position, (tuple, list)) and len(position) == 2):
-            raise ClickConfigError(f"Invalid position format: {position}. Must be (x, y).")
-        if not all(isinstance(c, int) and c >= 0 for c in position):
-            raise ClickConfigError(f"Invalid coordinates: {position}. Must be non-negative integers.")
-
-    return {
-        "interval": float(interval),
-        "clicks": int(clicks),
-        "button": button,
-        "position": position
-    }
-
-def process_autoclick_queue(queue: List[Dict[str, Any]]) -> Dict[str, int]:
-    """Main processing loop that validates input configs and executes clicks."""
-    stats = {"processed": 0, "failed": 0, "total_clicks": 0}
-
-    for item in queue:
+    def run_sequence(self, coordinates: Tuple[int, int]) -> None:
+        """Executes a click sequence at specified coordinates."""
+        self.is_active = True
+        logger.info(f"Starting sequence at {coordinates}")
+        
         try:
-            # Validate input parameters before execution
-            valid_config = validate_click_params(item)
-            
-            # Execute simulated click sequence
-            click_count = valid_config["clicks"]
-            interval = valid_config["interval"]
-            
-            for _ in range(click_count):
-                time.sleep(min(interval, 0.01))
-                stats["total_clicks"] += 1
-            
-            stats["processed"] += 1
-        except ClickConfigError:
-            # Skip invalid configs safely without crashing the main loop
-            stats["failed"] += 1
+            while self.is_active:
+                pyautogui.click(x=coordinates[0], y=coordinates[1], clicks=self.clicks)
+                time.sleep(self.interval)
+        except KeyboardInterrupt:
+            self.stop()
+        except Exception as e:
+            logger.error(f"Execution error: {e}")
+            self.stop()
 
-    return stats
+    def stop(self) -> None:
+        """Graceful shutdown of automation sequence."""
+        self.is_active = False
+        logger.info("Automation sequence halted")
+
+if __name__ == "__main__":
+    clicker = AutoClicker(interval=0.5)
+    clicker.run_sequence((500, 500))
