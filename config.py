@@ -1,48 +1,36 @@
-import json
-import os
-from typing import Any, Dict
+import dataclasses
+from typing import Dict, Any
 
-DEFAULT_CONFIG: Dict[str, Any] = {
-    "click_interval": 0.1,  # Seconds between clicks
-    "mouse_button": "left",  # Options: left, right, middle
-    "hotkey": "f8",  # Toggle start/stop hotkey
-    "max_clicks": 0,  # 0 indicates continuous clicking
-    "randomize_interval": False,  # Add jitter to click timing
-    "jitter_range": 0.02,  # Max offset in seconds for jitter
-}
+@dataclasses.dataclass
+class ClickConfig:
+    """Configuration settings for the autoclicker."""
+    interval_ms: int = 100
+    button: str = "left"
+    repeat_count: int = 1
+    randomize_timing: bool = False
 
+def load_config(data: Dict[str, Any]) -> ClickConfig:
+    """
+    Create a ClickConfig instance from a dictionary.
 
-class ConfigLoader:
-    """Loads and manages user configurations with fallback defaults."""
+    Args:
+        data: A dictionary containing configuration keys.
 
-    def __init__(self, config_path: str = "config.json"):
-        self.config_path = config_path
-        self.config = self.load_config()
+    Returns:
+        An initialized ClickConfig object with sanitized values.
+    """
+    return ClickConfig(
+        interval_ms=int(data.get("interval_ms", 100)),
+        button=str(data.get("button", "left")),
+        repeat_count=int(data.get("repeat_count", 1)),
+        randomize_timing=bool(data.get("randomize_timing", False))
+    )
 
-    def load_config(self) -> Dict[str, Any]:
-        """Loads configuration from disk, applying defaults for missing keys."""
-        config = DEFAULT_CONFIG.copy()
+def get_default_config() -> ClickConfig:
+    """
+    Returns a default configuration set.
 
-        if os.path.exists(self.config_path):
-            try:
-                with open(self.config_path, "r", encoding="utf-8") as f:
-                    user_config = json.load(f)
-                    if isinstance(user_config, dict):
-                        config.update(user_config)
-            except (json.JSONDecodeError, OSError):
-                pass
-
-        return config
-
-    def save_config(self) -> bool:
-        """Saves current configuration to file."""
-        try:
-            with open(self.config_path, "w", encoding="utf-8") as f:
-                json.dump(self.config, f, indent=4)
-            return True
-        except OSError:
-            return False
-
-    def get(self, key: str, default: Any = None) -> Any:
-        """Retrieve a specific configuration value."""
-        return self.config.get(key, default)
+    Returns:
+        Default ClickConfig object.
+    """
+    return ClickConfig()
