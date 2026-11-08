@@ -1,34 +1,31 @@
 import logging
 import sys
-from logging.handlers import RotatingFileHandler
+from typing import Optional
 
-# Configure performance-optimized logging for high-frequency events
-class PerformanceLogger:
-    def __init__(self, name="automation-tool-12", level=logging.INFO):
+class Logger:
+    """Handles application-wide logging for automation-tool-12."""
+
+    def __init__(self, name: str = "autoclicker", level: int = logging.INFO) -> None:
+        """Initializes the logger instance with standard formatting."""
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level)
         
-        # Use memory-efficient formatter
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        
-        # Rotating file handler to prevent disk I/O bottlenecks
-        file_handler = RotatingFileHandler(
-            "app.log", maxBytes=1024*1024*5, backupCount=3
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
-        file_handler.setFormatter(formatter)
         
-        # Stream handler for console debugging
-        stream_handler = logging.StreamHandler(sys.stdout)
-        stream_handler.setFormatter(formatter)
-        
-        self.logger.addHandler(file_handler)
-        self.logger.addHandler(stream_handler)
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
 
-    def get_logger(self):
-        return self.logger
+    def info(self, message: str) -> None:
+        """Logs an informational message to the console."""
+        self.logger.info(message)
 
-# Singleton pattern for consistent logging performance
-_logger_instance = PerformanceLogger().get_logger()
+    def error(self, message: str, exc_info: Optional[bool] = False) -> None:
+        """Logs an error message with optional traceback inclusion."""
+        self.logger.error(message, exc_info=exc_info)
 
-def get_logger():
-    return _logger_instance
+    def warning(self, message: str) -> None:
+        """Logs a warning message to the console."""
+        self.logger.warning(message)
