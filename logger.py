@@ -1,31 +1,26 @@
 import logging
 import sys
-from typing import Optional
+from pathlib import Path
 
-class Logger:
-    """Handles application-wide logging for automation-tool-12."""
+# Configure global logging for automation-tool-12
+def setup_logger(name: str = 'autoclicker', log_file: str = 'app.log') -> logging.Logger:
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    
+    # Console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    
+    # File handler
+    log_path = Path(log_file)
+    file_handler = logging.FileHandler(log_path)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    
+    return logger
 
-    def __init__(self, name: str = "autoclicker", level: int = logging.INFO) -> None:
-        """Initializes the logger instance with standard formatting."""
-        self.logger = logging.getLogger(name)
-        self.logger.setLevel(level)
-        
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-        
-        handler = logging.StreamHandler(sys.stdout)
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
-
-    def info(self, message: str) -> None:
-        """Logs an informational message to the console."""
-        self.logger.info(message)
-
-    def error(self, message: str, exc_info: Optional[bool] = False) -> None:
-        """Logs an error message with optional traceback inclusion."""
-        self.logger.error(message, exc_info=exc_info)
-
-    def warning(self, message: str) -> None:
-        """Logs a warning message to the console."""
-        self.logger.warning(message)
+# Singleton instance for application-wide use
+logger = setup_logger()
