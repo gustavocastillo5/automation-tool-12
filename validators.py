@@ -1,33 +1,30 @@
-import re
-from typing import Any, Optional
+import logging
 
-class ClickValidator:
-    """Handles input validation for automation parameters."""
+def validate_click_settings(interval: float, iterations: int) -> bool:
+    """Ensures click settings are within operational safety bounds."""
+    logger = logging.getLogger('automation-tool-12')
+    
+    if not isinstance(interval, (int, float)) or interval < 0.01:
+        logger.error(f"Invalid interval: {interval}. Must be >= 0.01 seconds.")
+        return False
+        
+    if not isinstance(iterations, int) or iterations < -1:
+        logger.error(f"Invalid iterations: {iterations}. Must be -1 (infinite) or >= 1.")
+        return False
+        
+    return True
 
-    @staticmethod
-    def validate_interval(interval: Any) -> float:
-        """Ensures interval is a positive numeric value."""
-        try:
-            value = float(interval)
-            if value < 0.01:
-                return 0.01
-            return value
-        except (ValueError, TypeError):
-            return 0.1
+def validate_coordinate(x: int, y: int, screen_width: int, screen_height: int) -> bool:
+    """Checks if target coordinates are within screen boundaries."""
+    logger = logging.getLogger('automation-tool-12')
+    
+    if 0 <= x <= screen_width and 0 <= y <= screen_height:
+        return True
+        
+    logger.error(f"Coordinates ({x}, {y}) out of bounds ({screen_width}x{screen_height}).")
+    return False
 
-    @staticmethod
-    def validate_coordinates(x: Any, y: Any) -> tuple[int, int]:
-        """Sanitizes screen coordinate inputs."""
-        try:
-            return int(x), int(y)
-        except (ValueError, TypeError):
-            return 0, 0
-
-    @staticmethod
-    def validate_process_name(name: Any) -> str:
-        """Validates process name against basic pattern."""
-        if not isinstance(name, str) or not name:
-            return ""
-        # Basic alphanumeric and underscore validation
-        clean_name = re.sub(r'[^a-zA-Z0-9_.]', '', name)
-        return clean_name
+def sanitize_input_config(config: dict) -> dict:
+    """Filters and sanitizes configuration dictionary keys."""
+    allowed_keys = {'interval', 'iterations', 'x', 'y'}
+    return {k: v for k, v in config.items() if k in allowed_keys}
