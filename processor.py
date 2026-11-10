@@ -1,40 +1,45 @@
-import logging
-import pyautogui
 import time
+import pyautogui
+from typing import Tuple, Optional
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('automation-tool-12')
+class ClickProcessor:
+    """Handles mouse click automation logic for the tool."""
 
-def execute_click(x: int, y: int, interval: float = 0.1):
-    """Performs a screen click with safety validation."""
-    try:
-        # Ensure coordinates are within reasonable display bounds
-        width, height = pyautogui.size()
-        if not (0 <= x <= width and 0 <= y <= height):
-            raise ValueError(f"Coordinates ({x}, {y}) out of screen bounds")
+    def __init__(self, interval: float = 0.1) -> None:
+        """Initialize the processor with a click interval."""
+        self.interval: float = interval
 
-        pyautogui.moveTo(x, y)
-        pyautogui.click()
-        time.sleep(interval)
-        
-    except pyautogui.FailSafeException:
-        logger.critical("Fail-safe triggered: stopping execution")
-        raise
-    except pyautogui.PyAutoGUIException as e:
-        logger.error(f"PyAutoGUI internal error: {e}")
-    except ValueError as e:
-        logger.warning(f"Validation error: {e}")
-    except Exception as e:
-        logger.error(f"Unexpected automation failure: {e}")
+    def execute_click(self, coordinates: Tuple[int, int], button: str = 'left') -> bool:
+        """
+        Performs a mouse click at the specified screen coordinates.
 
-def run_sequence(coordinates: list):
-    """Iterates through click sequence with error handling."""
-    if not coordinates:
-        logger.warning("Empty sequence provided, skipping")
-        return
+        Args:
+            coordinates: A tuple of (x, y) screen positions.
+            button: The mouse button to click ('left', 'right', 'middle').
 
-    for point in coordinates:
-        if not isinstance(point, (tuple, list)) or len(point) != 2:
-            logger.error(f"Invalid coordinate format: {point}")
-            continue
-        execute_click(*point)
+        Returns:
+            True if the click was successful, False otherwise.
+        """
+        try:
+            x, y = coordinates
+            pyautogui.click(x=x, y=y, button=button)
+            time.sleep(self.interval)
+            return True
+        except Exception:
+            return False
+
+    def perform_sequence(self, positions: list[Tuple[int, int]]) -> int:
+        """
+        Iterates through a list of coordinates to perform sequential clicks.
+
+        Args:
+            positions: A list of coordinate tuples.
+
+        Returns:
+            The count of successfully executed clicks.
+        """
+        success_count: int = 0
+        for pos in positions:
+            if self.execute_click(pos):
+                success_count += 1
+        return success_count
