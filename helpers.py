@@ -1,30 +1,35 @@
-import time
+import logging
 import pyautogui
-import random
 
-def safe_click(x: int, y: int, delay_range: tuple = (0.1, 0.5)) -> None:
-    """Move mouse to coordinates and perform a click with randomized delay."""
-    pyautogui.moveTo(x, y, duration=random.uniform(0.1, 0.3))
-    pyautogui.click()
-    time.sleep(random.uniform(*delay_range))
+logger = logging.getLogger(__name__)
 
-def get_screen_center() -> tuple:
-    """Return the center coordinates of the primary display."""
-    width, height = pyautogui.size()
-    return (width // 2, height // 2)
-
-def perform_sequence(coordinates: list, interval: float = 1.0) -> None:
-    """Execute clicks at a list of provided (x, y) tuples."""
-    for x, y in coordinates:
+def safe_click(x: int, y: int) -> bool:
+    """Performs a click with screen boundary and input validation."""
+    try:
+        screen_width, screen_height = pyautogui.size()
+        
+        if not (0 <= x < screen_width and 0 <= y < screen_height):
+            logger.error(f"Coordinates ({x}, {y}) out of screen bounds")
+            return False
+            
         pyautogui.click(x, y)
-        time.sleep(interval)
+        return True
+    except pyautogui.FailSafeException:
+        logger.critical("Fail-safe triggered by user intervention")
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error during click operation: {e}")
+        return False
 
-def wait_for_ready(seconds: int = 3) -> None:
-    """Cooldown period before automation starts."""
-    print(f"Starting in {seconds} seconds...")
-    time.sleep(seconds)
+def validate_coordinates(coords: tuple) -> bool:
+    """Checks if coordinate tuple is valid numeric format."""
+    if not isinstance(coords, tuple) or len(coords) != 2:
+        return False
+    return all(isinstance(val, int) for val in coords)
 
-def is_on_screen(x: int, y: int) -> bool:
-    """Validate if coordinate is within current monitor bounds."""
-    width, height = pyautogui.size()
-    return 0 <= x < width and 0 <= y < height
+def get_screen_safe_dimensions() -> tuple:
+    """Retrieves dimensions with fallback to common resolution."""
+    try:
+        return pyautogui.size()
+    except Exception:
+        return (1920, 1080)
