@@ -1,36 +1,34 @@
-import dataclasses
-from typing import Dict, Any
+import json
+import os
 
-@dataclasses.dataclass
-class ClickConfig:
-    """Configuration settings for the autoclicker."""
-    interval_ms: int = 100
-    button: str = "left"
-    repeat_count: int = 1
-    randomize_timing: bool = False
+DEFAULT_CONFIG = {
+    "click_interval": 0.1,
+    "hotkey": "f6",
+    "repeat_count": 0,
+    "randomization": False
+}
 
-def load_config(data: Dict[str, Any]) -> ClickConfig:
-    """
-    Create a ClickConfig instance from a dictionary.
+def load_config(filepath="config.json"):
+    """Loads configuration from disk or returns defaults."""
+    if not os.path.exists(filepath):
+        save_config(DEFAULT_CONFIG, filepath)
+        return DEFAULT_CONFIG
 
-    Args:
-        data: A dictionary containing configuration keys.
+    try:
+        with open(filepath, "r") as f:
+            config = json.load(f)
+            # Merge with defaults to ensure missing keys are handled
+            return {**DEFAULT_CONFIG, **config}
+    except (json.JSONDecodeError, IOError):
+        return DEFAULT_CONFIG
 
-    Returns:
-        An initialized ClickConfig object with sanitized values.
-    """
-    return ClickConfig(
-        interval_ms=int(data.get("interval_ms", 100)),
-        button=str(data.get("button", "left")),
-        repeat_count=int(data.get("repeat_count", 1)),
-        randomize_timing=bool(data.get("randomize_timing", False))
-    )
+def save_config(config, filepath="config.json"):
+    """Persists current configuration settings to disk."""
+    try:
+        with open(filepath, "w") as f:
+            json.dump(config, f, indent=4)
+    except IOError as e:
+        print(f"Failed to save configuration: {e}")
 
-def get_default_config() -> ClickConfig:
-    """
-    Returns a default configuration set.
-
-    Returns:
-        Default ClickConfig object.
-    """
-    return ClickConfig()
+# Initialization of global config
+current_config = load_config()
