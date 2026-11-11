@@ -1,39 +1,38 @@
 import pyautogui
 import time
 import logging
-from typing import Tuple
 
-logging.basicConfig(level=logging.INFO)
+# Configure basic logger for automation operations
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('automation-tool-12')
 
 class AutoClicker:
-    """Handles automated mouse interaction cycles."""
-
-    def __init__(self, interval: float = 1.0, clicks: int = 1):
+    def __init__(self, interval: float = 0.5):
         self.interval = interval
-        self.clicks = clicks
-        self.is_active = False
+        self.running = False
 
-    def run_sequence(self, coordinates: Tuple[int, int]) -> None:
-        """Executes a click sequence at specified coordinates."""
-        self.is_active = True
-        logger.info(f"Starting sequence at {coordinates}")
+    def start_clicking(self, iterations: int = 10):
+        """Executes mouse clicks based on configured interval."""
+        self.running = True
+        logger.info(f'starting clicks with {self.interval}s interval')
         
         try:
-            while self.is_active:
-                pyautogui.click(x=coordinates[0], y=coordinates[1], clicks=self.clicks)
+            for i in range(iterations):
+                if not self.running:
+                    break
+                pyautogui.click()
                 time.sleep(self.interval)
-        except KeyboardInterrupt:
-            self.stop()
+                logger.info(f'click {i+1} completed')
         except Exception as e:
-            logger.error(f"Execution error: {e}")
-            self.stop()
+            logger.error(f'execution failed: {e}')
+        finally:
+            self.running = False
 
-    def stop(self) -> None:
-        """Graceful shutdown of automation sequence."""
-        self.is_active = False
-        logger.info("Automation sequence halted")
+    def stop(self):
+        """Graceful shutdown of clicker loop."""
+        self.running = False
+        logger.info('clicker service stopped')
 
-if __name__ == "__main__":
-    clicker = AutoClicker(interval=0.5)
-    clicker.run_sequence((500, 500))
+if __name__ == '__main__':
+    clicker = AutoClicker(interval=0.1)
+    clicker.start_clicking(iterations=5)
