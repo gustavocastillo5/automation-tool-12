@@ -1,45 +1,37 @@
-import time
-import pyautogui
-from typing import Tuple, Optional
+import json
+import os
+from typing import Dict, Any, Optional
 
-class ClickProcessor:
-    """Handles mouse click automation logic for the tool."""
+def load_click_data(filepath: str) -> Dict[str, Any]:
+    """Loads autoclicker configuration settings from local json."""
+    if not os.path.exists(filepath):
+        return {"interval": 0.1, "button": "left", "repeats": 1}
+    
+    try:
+        with open(filepath, 'r') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return {}
 
-    def __init__(self, interval: float = 0.1) -> None:
-        """Initialize the processor with a click interval."""
-        self.interval: float = interval
+def save_click_data(filepath: str, data: Dict[str, Any]) -> bool:
+    """Persists current clicker configuration to storage file."""
+    try:
+        with open(filepath, 'w') as f:
+            json.dump(data, f, indent=4)
+        return True
+    except IOError:
+        return False
 
-    def execute_click(self, coordinates: Tuple[int, int], button: str = 'left') -> bool:
-        """
-        Performs a mouse click at the specified screen coordinates.
+def validate_click_settings(data: Dict[str, Any]) -> bool:
+    """Checks validity of autoclicker coordinate and timing."""
+    required = {'interval', 'button'}
+    if not all(k in data for k in required):
+        return False
+    return isinstance(data['interval'], (int, float)) and data['interval'] > 0
 
-        Args:
-            coordinates: A tuple of (x, y) screen positions.
-            button: The mouse button to click ('left', 'right', 'middle').
-
-        Returns:
-            True if the click was successful, False otherwise.
-        """
-        try:
-            x, y = coordinates
-            pyautogui.click(x=x, y=y, button=button)
-            time.sleep(self.interval)
-            return True
-        except Exception:
-            return False
-
-    def perform_sequence(self, positions: list[Tuple[int, int]]) -> int:
-        """
-        Iterates through a list of coordinates to perform sequential clicks.
-
-        Args:
-            positions: A list of coordinate tuples.
-
-        Returns:
-            The count of successfully executed clicks.
-        """
-        success_count: int = 0
-        for pos in positions:
-            if self.execute_click(pos):
-                success_count += 1
-        return success_count
+def sanitize_coordinates(raw_data: Dict[str, Any]) -> Dict[str, int]:
+    """Ensures click coordinates are positive integers."""
+    return {
+        "x": max(0, int(raw_data.get("x", 0))),
+        "y": max(0, int(raw_data.get("y", 0)))
+    }
