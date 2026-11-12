@@ -1,30 +1,27 @@
-import logging
+import re
 
-def validate_click_settings(interval: float, iterations: int) -> bool:
-    """Ensures click settings are within operational safety bounds."""
-    logger = logging.getLogger('automation-tool-12')
+def validate_coordinates(x: int, y: int) -> bool:
+    """Checks if coordinates are within standard screen bounds."""
+    return 0 <= x <= 10000 and 0 <= y <= 10000
+
+def validate_interval(interval: float) -> bool:
+    """Ensures click interval is within safe operational limits."""
+    return 0.01 <= interval <= 60.0
+
+def validate_config_data(data: dict) -> bool:
+    """Schema verification for autoclicker settings dictionary."""
+    required_keys = {'x', 'y', 'interval', 'clicks'}
+    if not all(key in data for key in required_keys):
+        return False
     
-    if not isinstance(interval, (int, float)) or interval < 0.01:
-        logger.error(f"Invalid interval: {interval}. Must be >= 0.01 seconds.")
+    if not isinstance(data.get('clicks'), int) or data['clicks'] < 0:
         return False
         
-    if not isinstance(iterations, int) or iterations < -1:
-        logger.error(f"Invalid iterations: {iterations}. Must be -1 (infinite) or >= 1.")
-        return False
-        
-    return True
+    return (
+        validate_coordinates(data['x'], data['y']) and 
+        validate_interval(data['interval'])
+    )
 
-def validate_coordinate(x: int, y: int, screen_width: int, screen_height: int) -> bool:
-    """Checks if target coordinates are within screen boundaries."""
-    logger = logging.getLogger('automation-tool-12')
-    
-    if 0 <= x <= screen_width and 0 <= y <= screen_height:
-        return True
-        
-    logger.error(f"Coordinates ({x}, {y}) out of bounds ({screen_width}x{screen_height}).")
-    return False
-
-def sanitize_input_config(config: dict) -> dict:
-    """Filters and sanitizes configuration dictionary keys."""
-    allowed_keys = {'interval', 'iterations', 'x', 'y'}
-    return {k: v for k, v in config.items() if k in allowed_keys}
+def sanitize_input_string(user_input: str) -> str:
+    """Removes non-numeric characters from numeric input fields."""
+    return re.sub(r'[^0-9.]', '', user_input)
