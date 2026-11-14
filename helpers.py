@@ -1,36 +1,32 @@
-import random
-import time
-from typing import Tuple
+import logging
 
+def validate_click_params(interval: float, iterations: int) -> bool:
+    """Validate autoclicker parameters to prevent invalid inputs."""
+    try:
+        if not isinstance(interval, (int, float)) or interval < 0.01:
+            logging.error(f"Invalid interval: {interval}. Must be >= 0.01.")
+            return False
+        
+        if not isinstance(iterations, int) or iterations < -1:
+            logging.error(f"Invalid iteration count: {iterations}. Must be >= -1.")
+            return False
+            
+        return True
+    except Exception as e:
+        logging.error(f"Validation error occurred: {e}")
+        return False
 
-def calculate_delay(cps: float, jitter: float = 0.1) -> float:
-    """Calculate sleep delay based on clicks per second and random jitter."""
-    if cps <= 0:
-        raise ValueError("CPS must be greater than zero.")
-    base_delay = 1.0 / cps
-    # Apply percentage jitter randomly (-jitter to +jitter)
-    variation = base_delay * random.uniform(-jitter, jitter)
-    return max(0.001, base_delay + variation)
+def sanitize_input(value: str) -> float:
+    """Convert string input to safe float representation."""
+    try:
+        cleaned = float(value.strip())
+        return max(0.01, cleaned)
+    except (ValueError, TypeError):
+        logging.warning("Failed to sanitize input, defaulting to 0.1s")
+        return 0.1
 
-
-def sleep_with_jitter(cps: float, jitter: float = 0.1) -> None:
-    """Pause execution for a duration calculated from CPS and jitter."""
-    delay = calculate_delay(cps, jitter)
-    time.sleep(delay)
-
-
-def get_randomized_coordinates(x: int, y: int, radius: int = 3) -> Tuple[int, int]:
-    """Apply slight random pixel offset to target coordinates to mimic human input."""
-    if radius <= 0:
-        return x, y
-    offset_x = random.randint(-radius, radius)
-    offset_y = random.randint(-radius, radius)
-    return x + offset_x, y + offset_y
-
-
-def parse_coordinate_string(coords_str: str) -> Tuple[int, int]:
-    """Parse 'X,Y' string input into integer tuple coordinates."""
-    parts = coords_str.strip().split(",")
-    if len(parts) != 2:
-        raise ValueError("Coordinates must be in 'X,Y' format.")
-    return int(parts[0].strip()), int(parts[1].strip())
+def validate_coordinates(x: int, y: int) -> bool:
+    """Ensure mouse coordinates are within reasonable bounds."""
+    if not all(isinstance(val, int) for val in (x, y)):
+        return False
+    return x >= 0 and y >= 0
