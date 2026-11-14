@@ -1,37 +1,29 @@
-import json
-import os
-from typing import Dict, Any, Optional
+import pyautogui
+import time
+import logging
 
-def load_click_data(filepath: str) -> Dict[str, Any]:
-    """Loads autoclicker configuration settings from local json."""
-    if not os.path.exists(filepath):
-        return {"interval": 0.1, "button": "left", "repeats": 1}
-    
-    try:
-        with open(filepath, 'r') as f:
-            return json.load(f)
-    except (json.JSONDecodeError, IOError):
-        return {}
+class ClickProcessor:
+    """Handles core click execution logic for automation-tool-12."""
 
-def save_click_data(filepath: str, data: Dict[str, Any]) -> bool:
-    """Persists current clicker configuration to storage file."""
-    try:
-        with open(filepath, 'w') as f:
-            json.dump(data, f, indent=4)
-        return True
-    except IOError:
-        return False
+    def __init__(self, interval: float = 0.5):
+        self.interval = interval
+        self.logger = logging.getLogger(__name__)
 
-def validate_click_settings(data: Dict[str, Any]) -> bool:
-    """Checks validity of autoclicker coordinate and timing."""
-    required = {'interval', 'button'}
-    if not all(k in data for k in required):
-        return False
-    return isinstance(data['interval'], (int, float)) and data['interval'] > 0
+    def execute_click(self, x: int, y: int, clicks: int = 1) -> None:
+        """Performs a mouse click at specified coordinates."""
+        try:
+            pyautogui.click(x=x, y=y, clicks=clicks)
+            self.logger.debug(f"Clicked at ({x}, {y})")
+            time.sleep(self.interval)
+        except Exception as e:
+            self.logger.error(f"Click failure at {x}, {y}: {e}")
 
-def sanitize_coordinates(raw_data: Dict[str, Any]) -> Dict[str, int]:
-    """Ensures click coordinates are positive integers."""
-    return {
-        "x": max(0, int(raw_data.get("x", 0))),
-        "y": max(0, int(raw_data.get("y", 0)))
-    }
+    def rapid_click_sequence(self, x: int, y: int, count: int) -> None:
+        """Executes a batch of clicks with defined interval."""
+        for _ in range(count):
+            self.execute_click(x, y)
+
+    @staticmethod
+    def get_mouse_position() -> tuple[int, int]:
+        """Retrieves current coordinates of the cursor."""
+        return pyautogui.position()
