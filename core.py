@@ -1,38 +1,59 @@
-import pyautogui
 import time
-import logging
+import threading
+from typing import Callable, Optional
+from enum import Enum, auto
 
-# Configure basic logger for automation operations
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('automation-tool-12')
+
+class ClickButton(Enum):
+    """Enumeration of supported mouse buttons for click events."""
+    LEFT = auto()
+    RIGHT = auto()
+    MIDDLE = auto()
+
 
 class AutoClicker:
-    def __init__(self, interval: float = 0.5):
-        self.interval = interval
-        self.running = False
+    """Core automation engine for managing background mouse clicking tasks."""
 
-    def start_clicking(self, iterations: int = 10):
-        """Executes mouse clicks based on configured interval."""
-        self.running = True
-        logger.info(f'starting clicks with {self.interval}s interval')
+    def __init__(self, interval: float = 0.1, button: ClickButton = ClickButton.LEFT) -> None:
+        """Initialize the autoclicker with click delay and target button.
         
-        try:
-            for i in range(iterations):
-                if not self.running:
-                    break
-                pyautogui.click()
-                time.sleep(self.interval)
-                logger.info(f'click {i+1} completed')
-        except Exception as e:
-            logger.error(f'execution failed: {e}')
-        finally:
-            self.running = False
+        Args:
+            interval: Time delay between clicks in seconds.
+            button: Target mouse button to trigger.
+        """
+        self.interval: float = max(0.001, interval)
+        self.button: ClickButton = button
+        self.running: bool = False
+        self.click_count: int = 0
+        self._thread: Optional[threading.Thread] = None
+        self._click_handler: Optional[Callable[[ClickButton], None]] = None
 
-    def stop(self):
-        """Graceful shutdown of clicker loop."""
+    def set_handler(self, handler: Callable[[ClickButton], None]) -> None:
+        """Register a custom callback handler for mouse click execution."""
+        self._click_handler = handler
+
+    def _run_loop(self) -> None:
+        """Execute repetitive clicking in dedicated background thread loop."""
+        while self.running:
+            if self._click_handler:
+                self._click_handler(self.button)
+            self.click_count += 1
+            time.sleep(self.interval)
+
+    def start(self) -> bool:
+        """Start the autoclicker execution thread if currently inactive."""
+        if self.running:
+            return False
+        self.running = True
+        self._thread = threading.Thread(target=self._run_loop, daemon=True)
+        self._thread.start()
+        return True
+
+    def stop(self) -> int:
+        """Halt click thread execution and return total performed clicks."""
+        if not self.running:
+            return self.click_count
         self.running = False
-        logger.info('clicker service stopped')
-
-if __name__ == '__main__':
-    clicker = AutoClicker(interval=0.1)
-    clicker.start_clicking(iterations=5)
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=1.0)
+        return self.click_count
