@@ -1,47 +1,34 @@
 import json
 import os
-import re
-from typing import Dict, List, Optional
+from typing import Any, Dict
 
-def parse_interval_to_seconds(interval_str: str) -> float:
-    """Convert human-readable time string (e.g., '500ms', '1.5s', '2m') to seconds."""
-    match = re.match(r"^(\d+(?:\.\d+)?)\s*(ms|s|m|h)?$", interval_str.strip().lower())
-    if not match:
-        raise ValueError(f"Invalid interval format: {interval_str}")
-    
-    value, unit = float(match.group(1)), match.group(2) or "s"
-    
-    if unit == "ms":
-        return value / 1000.0
-    elif unit == "s":
-        return value
-    elif unit == "m":
-        return value * 60.0
-    elif unit == "h":
-        return value * 3600.0
-    return value
-
-def load_click_profile(filepath: str) -> List[Dict[str, float]]:
-    """Load click sequence profiles from a JSON file."""
+def load_clicker_config(filepath: str) -> Dict[str, Any]:
+    """Load autoclicker configuration from a JSON file."""
     if not os.path.exists(filepath):
-        raise FileNotFoundError(f"Profile file not found: {filepath}")
+        return {
+            "interval": 0.1,
+            "button": "left",
+            "repeat": 0
+        }
     
-    with open(filepath, "r", encoding="utf-8") as f:
-        data = json.load(f)
-        
-    if not isinstance(data, list):
-        raise ValueError("Profile file must contain a JSON array of click actions")
-        
-    return data
+    with open(filepath, 'r') as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return {}
 
-def save_click_profile(filepath: str, click_data: List[Dict[str, float]]) -> bool:
-    """Save click sequence data safely to a JSON profile file."""
-    try:
-        dirname = os.path.dirname(filepath)
-        if dirname:
-            os.makedirs(dirname, exist_ok=True)
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(click_data, f, indent=4)
-        return True
-    except Exception:
-        return False
+def save_clicker_config(filepath: str, data: Dict[str, Any]) -> None:
+    """Persist current settings to the local filesystem."""
+    with open(filepath, 'w') as f:
+        json.dump(data, f, indent=4)
+
+def validate_click_interval(interval: float) -> float:
+    """Ensure the click interval is within safe bounds."""
+    min_interval = 0.01
+    max_interval = 60.0
+    return max(min_interval, min(interval, max_interval))
+
+def format_click_stats(clicks: int, duration: float) -> str:
+    """Return formatted string for performance logging."""
+    cps = clicks / duration if duration > 0 else 0
+    return f"Total Clicks: {clicks} | Average Rate: {cps:.2f} cps"
