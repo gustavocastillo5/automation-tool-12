@@ -1,28 +1,33 @@
 import logging
 
-def validate_click_params(interval: float, iterations: int) -> bool:
-    """
-    Validates input parameters for the automation loop.
-    Ensures click interval is positive and iterations are non-negative.
-    """
-    logger = logging.getLogger("automation-tool-12")
-    
-    if not isinstance(interval, (int, float)) or interval <= 0:
-        logger.error(f"Invalid interval: {interval}. Must be a positive number.")
+logger = logging.getLogger(__name__)
+
+def validate_coordinates(x: int, y: int, screen_width: int, screen_height: int) -> bool:
+    """Ensures click coordinates fall within display boundaries."""
+    if not (0 <= x < screen_width and 0 <= y < screen_height):
+        logger.error(f"Invalid coordinates: ({x}, {y}) for resolution {screen_width}x{screen_height}")
         return False
-        
-    if not isinstance(iterations, int) or iterations < 0:
-        logger.error(f"Invalid iterations: {iterations}. Must be 0 (infinite) or greater.")
-        return False
-        
     return True
 
-def sanitize_coordinates(x: int, y: int, screen_width: int, screen_height: int) -> bool:
-    """
-    Validates if coordinates are within the screen boundaries.
-    """
-    if 0 <= x <= screen_width and 0 <= y <= screen_height:
-        return True
-    
-    logging.warning(f"Coordinates ({x}, {y}) outside screen bounds ({screen_width}x{screen_height}).")
-    return False
+def validate_interval(interval: float) -> float:
+    """Enforces a minimum safe threshold for clicking frequency."""
+    min_interval = 0.01
+    if interval < min_interval:
+        logger.warning(f"Interval {interval} too low, defaulting to {min_interval}")
+        return min_interval
+    return float(interval)
+
+def validate_click_count(count: int) -> int:
+    """Restricts click count to non-negative integers."""
+    if count < 0:
+        logger.error(f"Negative click count provided: {count}")
+        raise ValueError("Click count cannot be negative")
+    return int(count)
+
+def sanitize_config(config: dict) -> dict:
+    """Validates entire configuration dictionary structure."""
+    required_keys = {'x', 'y', 'interval', 'count'}
+    if not required_keys.issubset(config.keys()):
+        missing = required_keys - config.keys()
+        raise KeyError(f"Missing required configuration keys: {missing}")
+    return config
