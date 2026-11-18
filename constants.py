@@ -1,29 +1,30 @@
-import platform
-from enum import Enum
+import os
 
-# Application configuration defaults
-DEFAULT_INTERVAL = 0.1
-DEFAULT_CLICK_TYPE = 'left'
-DEFAULT_HOTKEY = 'f8'
+# Application configuration constants for automation-tool-12
 
-# Supported mouse buttons
-class MouseButton(Enum):
-    LEFT = 'left'
-    RIGHT = 'right'
-    MIDDLE = 'middle'
+DEFAULT_CLICK_INTERVAL = 0.1
+MAX_CLICK_LIMIT = 10000
 
-# Platform-specific thresholds for automation safety
-OS_TYPE = platform.system()
-IS_WINDOWS = OS_TYPE == 'Windows'
+# UI and Display Settings
+WINDOW_TITLE = "Automation Tool 12 - Control Panel"
+DEFAULT_DPI_AWARE = True
 
-# UI and Interaction constraints
-MAX_CLICK_RATE = 1000
-MIN_INTERVAL = 0.001
-TIMEOUT_SECONDS = 30
+# File System Paths
+LOG_DIR = os.path.join(os.getcwd(), "logs")
+CONFIG_FILE = "settings.json"
 
-# Log formatting
-LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-LOG_FILE_PATH = 'automation.log'
+# Execution States
+STATE_IDLE = 0
+STATE_RUNNING = 1
+STATE_PAUSED = 2
 
-def get_app_title() -> str:
-    return "Automation Tool 12 - Autoclicker"
+# Keyboard Shortcuts
+TOGGLE_HOTKEY = "f8"
+EXIT_HOTKEY = "f12"
+
+# Validation Constraints
+MIN_INTERVAL = 0.01
+MAX_INTERVAL = 60.0
+
+def get_app_version():
+    return "1.2.0"
