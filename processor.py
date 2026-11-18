@@ -1,43 +1,39 @@
-import pyautogui
 import time
-import logging
+import threading
+from queue import Queue
 
-# Configure logging for automation events
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('automation-tool-12')
+class EventProcessor:
+    """Handles click events using a high-performance worker thread."""
 
-def execute_click(x: int, y: int, interval: float = 0.1):
-    """Performs a click with boundary and sanity checks."""
-    try:
-        # Validate coordinates against screen resolution
-        screen_width, screen_height = pyautogui.size()
-        
-        if not (0 <= x < screen_width and 0 <= y < screen_height):
-            logger.error(f"coordinates ({x}, {y}) out of screen bounds")
-            return False
+    def __init__(self):
+        self.queue = Queue()
+        self.running = True
+        self.worker = threading.Thread(target=self._process_queue, daemon=True)
+        self.worker.start()
 
-        if interval < 0:
-            logger.warning("negative interval detected, resetting to default")
-            interval = 0.1
+    def _process_queue(self):
+        """Consumes events from queue with minimal latency."""
+        while self.running:
+            try:
+                task = self.queue.get(timeout=0.1)
+                if task:
+                    # Unpack event details for rapid execution
+                    x, y, btn = task
+                    self._execute_click(x, y, btn)
+                    self.queue.task_done()
+            except:
+                continue
 
-        pyautogui.click(x, y)
-        time.sleep(interval)
-        return True
+    def _execute_click(self, x: int, y: int, btn: str):
+        """Low-level interface for click simulation."""
+        # Placeholder for platform-specific mouse hooks
+        pass
 
-    except pyautogui.FailSafeException:
-        logger.critical("failsafe triggered by user")
-        return False
-    except Exception as e:
-        logger.error(f"unexpected interaction failure: {e}")
-        return False
+    def add_event(self, x: int, y: int, btn: str):
+        """Queues new click event for non-blocking main loop."""
+        self.queue.put((x, y, btn))
 
-def batch_process(actions: list):
-    """Processes list of (x, y) tuples with error propagation."""
-    for action in actions:
-        if not isinstance(action, (tuple, list)) or len(action) != 2:
-            logger.warning(f"skipping malformed action: {action}")
-            continue
-        
-        success = execute_click(action[0], action[1])
-        if not success:
-            break
+    def shutdown(self):
+        """Graceful stop of background worker."""
+        self.running = False
+        self.worker.join()
