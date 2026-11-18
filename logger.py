@@ -1,39 +1,35 @@
 import logging
-import logging.handlers
+from logging.handlers import RotatingFileHandler
 import os
 
-# Configure application logging with rotation
-# Keeps 5 files of 1MB each to manage disk space
-
-LOG_FILE = "automation.log"
-MAX_BYTES = 1024 * 1024
-BACKUP_COUNT = 5
-
-def setup_logger(name: str = "automation-tool") -> logging.Logger:
+def setup_logger(name='automation-tool-12', log_file='app.log', level=logging.INFO):
     """Initializes a rotating file logger for the application."""
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(level)
 
-    # Prevent duplicate handlers on re-initialization
+    # Prevent duplicate handlers if function is called multiple times
     if not logger.handlers:
-        formatter = logging.Formatter(
-            "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
-        )
+        # Ensure logs directory exists
+        log_dir = os.path.dirname(log_file)
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir)
 
-        # Rotating file handler configuration
-        file_handler = logging.handlers.RotatingFileHandler(
-            LOG_FILE,
-            maxBytes=MAX_BYTES,
-            backupCount=BACKUP_COUNT
+        # Rotation setup: 5MB per file, keep 3 backups
+        handler = RotatingFileHandler(
+            log_file, 
+            maxBytes=5 * 1024 * 1024, 
+            backupCount=3
         )
-        file_handler.setFormatter(formatter)
         
-        # Console handler for real-time output
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+        # Also log to console
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(formatter)
-
-        logger.addHandler(file_handler)
         logger.addHandler(console_handler)
 
     return logger
