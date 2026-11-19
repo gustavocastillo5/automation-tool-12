@@ -1,33 +1,26 @@
-import logging
+from typing import Union, Tuple
 
-logger = logging.getLogger(__name__)
+def validate_coordinates(x: int, y: int) -> bool:
+    """Verify that screen coordinates are within non-negative bounds."""
+    return isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0
 
-def validate_coordinates(x: int, y: int, screen_width: int, screen_height: int) -> bool:
-    """Ensures click coordinates fall within display boundaries."""
-    if not (0 <= x < screen_width and 0 <= y < screen_height):
-        logger.error(f"Invalid coordinates: ({x}, {y}) for resolution {screen_width}x{screen_height}")
-        return False
-    return True
+def validate_interval(interval: float) -> bool:
+    """Ensure the click interval is a positive floating point value."""
+    return isinstance(interval, (int, float)) and interval > 0
 
-def validate_interval(interval: float) -> float:
-    """Enforces a minimum safe threshold for clicking frequency."""
-    min_interval = 0.01
-    if interval < min_interval:
-        logger.warning(f"Interval {interval} too low, defaulting to {min_interval}")
-        return min_interval
-    return float(interval)
+def validate_button(button: str) -> bool:
+    """Check if the provided mouse button name is supported."""
+    supported = ('left', 'right', 'middle')
+    return isinstance(button, str) and button.lower() in supported
 
-def validate_click_count(count: int) -> int:
-    """Restricts click count to non-negative integers."""
-    if count < 0:
-        logger.error(f"Negative click count provided: {count}")
-        raise ValueError("Click count cannot be negative")
-    return int(count)
-
-def sanitize_config(config: dict) -> dict:
-    """Validates entire configuration dictionary structure."""
-    required_keys = {'x', 'y', 'interval', 'count'}
-    if not required_keys.issubset(config.keys()):
-        missing = required_keys - config.keys()
-        raise KeyError(f"Missing required configuration keys: {missing}")
-    return config
+def parse_click_data(raw_data: Tuple[int, int, float]) -> dict:
+    """Transform raw tuple data into a validated dictionary format."""
+    x, y, interval = raw_data
+    if not (validate_coordinates(x, y) and validate_interval(interval)):
+        raise ValueError("Invalid click parameters provided")
+    
+    return {
+        "x": x,
+        "y": y,
+        "interval": float(interval)
+    }
