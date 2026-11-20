@@ -1,37 +1,35 @@
-import os
 import json
-import logging
+import os
+from typing import Any, Dict
 
-# Configuration settings for automation-tool-12
 DEFAULT_CONFIG = {
     "interval": 0.1,
-    "iterations": 100,
-    "button": "left"
+    "button": "left",
+    "repeat": 0,
+    "hotkey": "f6"
 }
 
-def load_config(path: str) -> dict:
-    """Loads and validates configuration from a JSON file."""
-    if not os.path.exists(path):
-        logging.warning(f"Config file missing at {path}, using defaults.")
+def load_settings(filepath: str = "settings.json") -> Dict[str, Any]:
+    """Load autoclicker configuration from JSON file."""
+    if not os.path.exists(filepath):
+        save_settings(DEFAULT_CONFIG, filepath)
+        return DEFAULT_CONFIG
+    
+    try:
+        with open(filepath, "r") as f:
+            return {**DEFAULT_CONFIG, **json.load(f)}
+    except (json.JSONDecodeError, IOError):
         return DEFAULT_CONFIG
 
+def save_settings(data: Dict[str, Any], filepath: str = "settings.json") -> bool:
+    """Persist current autoclicker settings to disk."""
     try:
-        with open(path, "r") as file:
-            data = json.load(file)
-            # Ensure mandatory keys exist with valid types
-            if not isinstance(data.get("interval"), (int, float)):
-                raise ValueError("Invalid interval type")
-            return data
-    except (json.JSONDecodeError, ValueError, PermissionError) as e:
-        logging.error(f"Failed to load config: {e}. Falling back to defaults.")
-        return DEFAULT_CONFIG
-
-def save_config(path: str, config: dict) -> bool:
-    """Persists configuration safely to disk."""
-    try:
-        with open(path, "w") as file:
-            json.dump(config, file, indent=4)
+        with open(filepath, "w") as f:
+            json.dump(data, f, indent=4)
         return True
-    except (IOError, TypeError) as e:
-        logging.error(f"Could not save configuration: {e}")
+    except IOError:
         return False
+
+def validate_interval(interval: float) -> float:
+    """Ensure click interval is within safe bounds."""
+    return max(0.01, min(interval, 60.0))
