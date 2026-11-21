@@ -1,39 +1,46 @@
 import time
-import threading
-from queue import Queue
+import pyautogui
+from typing import Tuple, Optional
 
-class EventProcessor:
-    """Handles click events using a high-performance worker thread."""
+class ClickProcessor:
+    """Handles execution of click operations for automation-tool-12."""
 
-    def __init__(self):
-        self.queue = Queue()
-        self.running = True
-        self.worker = threading.Thread(target=self._process_queue, daemon=True)
-        self.worker.start()
+    def __init__(self, interval: float = 0.1) -> None:
+        """Initialize processor with specified click interval."""
+        self.interval: float = interval
 
-    def _process_queue(self):
-        """Consumes events from queue with minimal latency."""
-        while self.running:
-            try:
-                task = self.queue.get(timeout=0.1)
-                if task:
-                    # Unpack event details for rapid execution
-                    x, y, btn = task
-                    self._execute_click(x, y, btn)
-                    self.queue.task_done()
-            except:
-                continue
+    def perform_click(self, coordinates: Tuple[int, int], button: str = 'left') -> bool:
+        """
+        Executes a click at the target coordinates.
+        
+        Args:
+            coordinates: Tuple of (x, y) screen positions.
+            button: The mouse button to click ('left', 'right', 'middle').
+            
+        Returns:
+            True if click was successful, False otherwise.
+        """
+        try:
+            pyautogui.click(x=coordinates[0], y=coordinates[1], button=button)
+            time.sleep(self.interval)
+            return True
+        except Exception:
+            return False
 
-    def _execute_click(self, x: int, y: int, btn: str):
-        """Low-level interface for click simulation."""
-        # Placeholder for platform-specific mouse hooks
-        pass
-
-    def add_event(self, x: int, y: int, btn: str):
-        """Queues new click event for non-blocking main loop."""
-        self.queue.put((x, y, btn))
-
-    def shutdown(self):
-        """Graceful stop of background worker."""
-        self.running = False
-        self.worker.join()
+    def batch_process(self, queue: list[Tuple[int, int]], count: int) -> int:
+        """
+        Processes a queue of coordinates for a specific number of cycles.
+        
+        Args:
+            queue: List of (x, y) coordinate tuples.
+            count: Total number of iterations to perform.
+            
+        Returns:
+            The number of successful clicks performed.
+        """
+        success_count: int = 0
+        for _ in range(count):
+            for pos in queue:
+                if self.perform_click(pos):
+                    success_count += 1
+        return success_count
