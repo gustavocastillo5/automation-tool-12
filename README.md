@@ -1,17 +1,18 @@
 # automation-tool-12
 
-Automation-tool-12 is a high-performance Python-based autoclicker designed for precision tasks and repetitive UI interactions. It utilizes low-level system hooks to provide reliable click execution with minimal CPU overhead.
+`automation-tool-12` is a high-performance, lightweight Python autoclicker designed for rapid task execution and UI testing. It provides a robust command-line interface to automate mouse interactions with sub-millisecond precision.
+
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 ## Features
-
-*   **Adaptive Intervals:** Set custom click delays with millisecond precision or utilize the "human-mode" to randomize intervals and bypass basic anti-bot triggers.
-*   **Dynamic Coordinates:** Configure click points using absolute screen coordinates or dynamic offsets relative to active window elements.
-*   **Hotkey Integration:** Start and stop automated sequences instantly using global keyboard listeners, ensuring you remain in control during execution.
-*   **Configuration Presets:** Save and load complex click profiles as JSON files to switch between different automation workflows seamlessly.
+*   **Variable Click Rates:** Configure clicks-per-second (CPS) dynamically to suit specific testing requirements.
+*   **Customizable Hotkeys:** Easily start or stop the automation process using globally registered keyboard shortcuts.
+*   **Precision Targeting:** Supports coordinate-based clicking or current-mouse-position mode for versatile workflow integration.
+*   **Anti-Detection Jitter:** Includes an optional randomized offset feature to mimic human movement patterns.
 
 ## Installation
 
-Ensure you have Python 3.8 or higher installed on your system. Clone the repository and install the required dependencies:
+Ensure you have [Python 3.8+](https://www.python.org/) installed, then clone the repository and install the required dependencies:
 
 ```bash
 git clone https://github.com/Developer/automation-tool-12.git
@@ -21,20 +22,22 @@ pip install -r requirements.txt
 
 ## Usage
 
-To start a basic click sequence at your current cursor position with a 500ms delay, run the following command:
+You can execute the tool via the command line by specifying the click frequency and the desired duration.
 
+**Basic execution:**
 ```bash
-python main.py --interval 0.5 --clicks 100
+python main.py --cps 10 --duration 60
 ```
 
-For advanced usage, point the tool to a specific configuration file:
-
+**Run with jitter for human-like behavior:**
 ```bash
-python main.py --config configs/production_run.json
+python main.py --cps 5 --jitter 15
 ```
+
+### Configuration
+* `--cps`: Number of clicks per second.
+* `--duration`: Total time to run in seconds (default is infinite).
+* `--button`: Specify the mouse button (`left`, `right`, or `middle`).
 
 ## License
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Distributed under the MIT License. See `LICENSE` for more information.
