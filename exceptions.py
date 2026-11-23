@@ -1,28 +1,32 @@
+import time
+import functools
 import logging
 
-# Configure logger for automation-tool-12
+# Configure logging for network events
 logger = logging.getLogger('automation-tool-12')
 
-class AutomationError(Exception):
-    """Base exception for the autoclicker tool."""
+def retry_network_operation(max_retries=3, delay=2):
+    """
+    Decorator to retry network functions upon failure.
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while attempts < max_retries:
+                try:
+                    return func(*args, **kwargs)
+                except (ConnectionError, TimeoutError) as e:
+                    attempts += 1
+                    logger.warning(f"Attempt {attempts} failed: {e}. Retrying...")
+                    if attempts >= max_retries:
+                        logger.error("Max retries reached. Operation failed.")
+                        raise
+                    time.sleep(delay)
+            return None
+        return wrapper
+    return decorator
+
+class NetworkException(Exception):
+    """Custom base exception for network-related errors."""
     pass
-
-class ConfigurationError(AutomationError):
-    """Raised when settings are invalid."""
-    pass
-
-class ClickExecutionError(AutomationError):
-    """Raised when mouse events fail."""
-    pass
-
-def validate_interval(interval: float):
-    """Ensures click interval is within safe bounds."""
-    if not isinstance(interval, (int, float)) or interval < 0.01:
-        logger.error(f"Invalid interval provided: {interval}")
-        raise ConfigurationError("Interval must be at least 0.01 seconds")
-
-def handle_execution_failure(err: Exception):
-    """Centralized error reporting for system events."""
-    logger.critical(f"System failure during click operation: {str(err)}")
-    # Additional cleanup logic would trigger here
-    raise ClickExecutionError("Failed to perform system-level mouse operation") from err
