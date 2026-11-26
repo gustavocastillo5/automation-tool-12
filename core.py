@@ -1,36 +1,35 @@
 import time
-import threading
-from typing import Callable
+import pyautogui
 
-class AutoClicker:
-    """Optimized click core utilizing non-blocking thread execution."""
-    def __init__(self, interval: float, click_func: Callable[[], None]):
-        self.interval = max(0.001, interval)
-        self.click_func = click_func
-        self._running = False
-        self._thread = None
+def run_autoclicker(interval, count):
+    """Executes mouse clicks based on validated user input."""
+    print(f"Starting autoclicker: {count} clicks with {interval}s interval.")
+    
+    for i in range(count):
+        pyautogui.click()
+        time.sleep(interval)
+        print(f"Click {i + 1}/{count} completed.")
 
-    def _execute(self):
-        """High-frequency execution loop with jitter reduction."""
-        next_call = time.perf_counter()
-        while self._running:
-            self.click_func()
-            next_call += self.interval
-            sleep_time = next_call - time.perf_counter()
-            if sleep_time > 0:
-                time.sleep(sleep_time)
-            else:
-                next_call = time.perf_counter()
+def main():
+    try:
+        user_interval = input("Enter interval (seconds): ")
+        user_count = input("Enter click count: ")
 
-    def start(self):
-        """Initialize execution thread."""
-        if not self._running:
-            self._running = True
-            self._thread = threading.Thread(target=self._execute, daemon=True)
-            self._thread.start()
+        # Validation logic for input parameters
+        interval = float(user_interval)
+        count = int(user_count)
 
-    def stop(self):
-        """Graceful shutdown of execution thread."""
-        self._running = False
-        if self._thread:
-            self._thread.join()
+        if interval < 0.1:
+            raise ValueError("Interval must be at least 0.1 seconds.")
+        if count <= 0:
+            raise ValueError("Click count must be a positive integer.")
+
+        run_autoclicker(interval, count)
+
+    except ValueError as e:
+        print(f"Input validation error: {e}")
+    except Exception as e:
+        print(f"Unexpected error occurred: {e}")
+
+if __name__ == "__main__":
+    main()
