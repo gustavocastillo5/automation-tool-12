@@ -4,12 +4,12 @@ import os
 DEFAULT_CONFIG = {
     "interval": 0.1,
     "button": "left",
-    "repeat_count": 0,
-    "hotkey": "f8"
+    "hotkey": "f6",
+    "repeat": 0
 }
 
-def load_config(filepath: str = "config.json") -> dict:
-    """Loads configuration from file or returns defaults."""
+def load_config(filepath="config.json"):
+    """Load configuration from disk or return defaults."""
     if not os.path.exists(filepath):
         save_config(DEFAULT_CONFIG, filepath)
         return DEFAULT_CONFIG
@@ -18,12 +18,14 @@ def load_config(filepath: str = "config.json") -> dict:
         with open(filepath, "r") as f:
             user_config = json.load(f)
             # Merge with defaults to ensure missing keys are handled
-            return {**DEFAULT_CONFIG, **user_config}
+            config = DEFAULT_CONFIG.copy()
+            config.update(user_config)
+            return config
     except (json.JSONDecodeError, IOError):
         return DEFAULT_CONFIG
 
-def save_config(config: dict, filepath: str = "config.json") -> None:
-    """Persists current configuration to disk."""
+def save_config(config, filepath="config.json"):
+    """Persist configuration settings to a JSON file."""
     try:
         with open(filepath, "w") as f:
             json.dump(config, f, indent=4)
