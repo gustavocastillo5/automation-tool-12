@@ -1,40 +1,46 @@
+import logging
+import pyautogui
 import time
-import threading
-from queue import Queue
 
-class ClickProcessor:
-    """Optimized click command processing module."""
-    def __init__(self, interval=0.01):
-        self.queue = Queue()
-        self.interval = interval
-        self.running = False
+# Configure logger for automation monitoring
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('automation-tool-12')
 
-    def process_queue(self):
-        """Consumes click events using efficient threading."""
-        while self.running:
-            if not self.queue.empty():
-                coords = self.queue.get()
-                self._execute_click(coords)
-            time.sleep(self.interval)
+def perform_click(x, y, interval=0.1):
+    """
+    Executes a mouse click with input validation and safety checks.
+    """
+    try:
+        if not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
+            raise ValueError('Coordinates must be numeric')
 
-    def _execute_click(self, coords):
-        """Hardware-level abstraction for click action."""
-        x, y = coords
-        # Direct interaction logic goes here
-        pass
+        screen_width, screen_height = pyautogui.size()
+        if not (0 <= x <= screen_width and 0 <= y <= screen_height):
+            raise pyautogui.FailSafeException('Coordinates out of bounds')
 
-    def start(self):
-        """Initializes processing thread."""
-        self.running = True
-        self.thread = threading.Thread(target=self.process_queue, daemon=True)
-        self.thread.start()
+        pyautogui.click(x=x, y=y)
+        time.sleep(interval)
+        return True
 
-    def stop(self):
-        """Graceful shutdown of processing thread."""
-        self.running = False
-        if hasattr(self, 'thread'):
-            self.thread.join()
+    except pyautogui.FailSafeException as e:
+        logger.error(f'Safety trigger activated: {e}')
+        return False
+    except Exception as e:
+        logger.error(f'Unexpected error during click execution: {e}')
+        return False
 
-    def add_task(self, coords):
-        """Asynchronous task registration."""
-        self.queue.put(coords)
+def batch_process_clicks(coordinates):
+    """
+    Iterates through a list of coordinate tuples with error handling.
+    """
+    if not isinstance(coordinates, list):
+        logger.warning('Invalid input format provided to batch processor')
+        return
+
+    for coord in coordinates:
+        if len(coord) != 2:
+            continue
+        success = perform_click(coord[0], coord[1])
+        if not success:
+            logger.info('Stopping batch processing due to execution failure')
+            break
