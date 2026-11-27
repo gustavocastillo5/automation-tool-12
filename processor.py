@@ -1,34 +1,40 @@
-import json
-import os
-from typing import Dict, Any, Optional
+import time
+import threading
+from queue import Queue
 
-def load_click_settings(filepath: str) -> Dict[str, Any]:
-    """Loads autoclicker configuration from a local JSON file."""
-    if not os.path.exists(filepath):
-        return {"interval": 0.1, "button": "left", "repeat": -1}
-    
-    try:
-        with open(filepath, 'r') as f:
-            return json.load(f)
-    except (json.JSONDecodeError, IOError):
-        return {}
+class ClickProcessor:
+    """Optimized click command processing module."""
+    def __init__(self, interval=0.01):
+        self.queue = Queue()
+        self.interval = interval
+        self.running = False
 
-def save_click_settings(filepath: str, data: Dict[str, Any]) -> bool:
-    """Persists current click settings to disk safely."""
-    try:
-        with open(filepath, 'w') as f:
-            json.dump(data, f, indent=4)
-        return True
-    except IOError:
-        return False
+    def process_queue(self):
+        """Consumes click events using efficient threading."""
+        while self.running:
+            if not self.queue.empty():
+                coords = self.queue.get()
+                self._execute_click(coords)
+            time.sleep(self.interval)
 
-def validate_click_data(data: Dict[str, Any]) -> bool:
-    """Checks for required keys in settings dictionary."""
-    required = {"interval", "button", "repeat"}
-    return all(key in data for key in required)
+    def _execute_click(self, coords):
+        """Hardware-level abstraction for click action."""
+        x, y = coords
+        # Direct interaction logic goes here
+        pass
 
-def sanitize_click_data(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Ensures interval is positive and within bounds."""
-    sanitized = data.copy()
-    sanitized['interval'] = max(0.01, min(sanitized.get('interval', 0.1), 60.0))
-    return sanitized
+    def start(self):
+        """Initializes processing thread."""
+        self.running = True
+        self.thread = threading.Thread(target=self.process_queue, daemon=True)
+        self.thread.start()
+
+    def stop(self):
+        """Graceful shutdown of processing thread."""
+        self.running = False
+        if hasattr(self, 'thread'):
+            self.thread.join()
+
+    def add_task(self, coords):
+        """Asynchronous task registration."""
+        self.queue.put(coords)
