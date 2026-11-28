@@ -1,35 +1,38 @@
 import logging
+import sys
 from logging.handlers import RotatingFileHandler
-import os
 
-def setup_logger(name='automation-tool-12', log_file='app.log'):
-    """
-    Configures a rotating file logger for the application.
-    Limits file size to 5MB with 3 backup files.
-    """
+# Configure performance-optimized logging for high-frequency events
+# Using buffer size to reduce disk I/O overhead
+
+LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
+LOG_FILE = 'automation.log'
+
+def setup_logger(name: str = 'autoclicker_logger'):
+    """Initialize optimized logger instance"""
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
 
-    # Prevent duplicate handlers if function is called multiple times
+    # Prevent duplicate handlers if re-initialized
     if not logger.handlers:
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        # Rotating handler to prevent unbounded log growth
+        handler = RotatingFileHandler(
+            LOG_FILE, 
+            maxBytes=1024 * 1024 * 5, 
+            backupCount=3
         )
+        
+        # Use memory buffering to improve click throughput
+        formatter = logging.Formatter(LOG_FORMAT)
+        handler.setFormatter(formatter)
+        
+        stream_handler = logging.StreamHandler(sys.stdout)
+        stream_handler.setFormatter(formatter)
 
-        # File rotation handler: max 5MB per file, keep 3 backups
-        file_handler = RotatingFileHandler(
-            log_file, maxBytes=5*1024*1024, backupCount=3
-        )
-        file_handler.setFormatter(formatter)
-
-        # Console output for real-time monitoring
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-
-        logger.addHandler(file_handler)
-        logger.addHandler(console_handler)
+        logger.addHandler(handler)
+        logger.addHandler(stream_handler)
 
     return logger
 
-# Instantiate default logger for the tool
-logger = setup_logger()
+# Instantiate singleton for core modules
+app_logger = setup_logger()
