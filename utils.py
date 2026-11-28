@@ -1,33 +1,30 @@
 import json
 import os
-from typing import Dict, Any
 
-CONFIG_FILE = "autoclicker_config.json"
-
-def load_click_data() -> Dict[str, Any]:
-    """Load autoclicker configuration from local storage."""
-    if not os.path.exists(CONFIG_FILE):
-        return {"interval": 0.1, "button": "left", "enabled": False}
-    
+def load_click_config(filepath: str) -> dict:
+    """Loads autoclicker settings from a JSON file."""
+    if not os.path.exists(filepath):
+        return {"interval": 0.1, "button": "left", "repeat": False}
     try:
-        with open(CONFIG_FILE, "r") as f:
+        with open(filepath, 'r') as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError):
         return {}
 
-def save_click_data(data: Dict[str, Any]) -> bool:
-    """Persist autoclicker configuration to local storage."""
+def save_click_config(filepath: str, data: dict) -> bool:
+    """Persists autoclicker settings to disk."""
     try:
-        with open(CONFIG_FILE, "w") as f:
+        with open(filepath, 'w') as f:
             json.dump(data, f, indent=4)
         return True
     except IOError:
         return False
 
-def validate_interval(interval: float) -> bool:
-    """Ensure click interval remains within safe bounds."""
-    return 0.01 <= interval <= 60.0
-
-def format_coords(x: int, y: int) -> str:
-    """Format screen coordinates for logging."""
-    return f"({x}, {y})"
+def validate_click_params(config: dict) -> bool:
+    """Ensures configuration values are within safe bounds."""
+    interval = config.get("interval", 0.0)
+    if not isinstance(interval, (int, float)) or interval < 0.01:
+        return False
+    if config.get("button") not in ["left", "right", "middle"]:
+        return False
+    return True
